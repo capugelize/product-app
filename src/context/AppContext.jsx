@@ -5,7 +5,7 @@ const AppContext = createContext();
 export const AppProvider = ({ children }) => {
   const [tasks, setTasks] = useState([]);
   const [settings, setSettings] = useState({
-    workTime: 25,
+    workTime: 30,
     breakTime: 5,
     notifications: true,
     darkMode: false,
