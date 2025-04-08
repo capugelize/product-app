@@ -1,3 +1,91 @@
+/* Variables globales */
+:root {
+  --primary-color: #1890ff;
+  --text-color: rgba(0, 0, 0, 0.85);
+  --text-color-secondary: rgba(0, 0, 0, 0.45);
+  --border-color: #d9d9d9;
+  --background-color: #f0f2f5;
+  --sidebar-width: 250px;
+  --header-height: 64px;
+}
+
+/* Dark mode variables */
+.dark-mode {
+  --text-color: rgba(255, 255, 255, 0.85);
+  --text-color-secondary: rgba(255, 255, 255, 0.45);
+  --border-color: #434343;
+  --background-color: #141414;
+}
+
+/* Reset et styles de base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  line-height: 1.5;
+}
+
+/* Layout principal */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Conteneur principal */
+.main-container {
+  display: flex;
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  min-height: calc(100vh - var(--header-height));
+  transition: margin-left 0.3s ease;
+}
+
+/* Contenu principal */
+.main-content {
+  flex: 1;
+  padding: 24px;
+  background-color: var(--background-color);
+  min-height: 100%;
+  overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-container {
+    margin-left: 0;
+  }
+  
+  .main-container.sidebar-collapsed {
+    margin-left: 80px;
+  }
+}
+
+/* Transitions */
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 300ms ease-in;
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 300ms ease-in;
+}
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -341,3 +429,4 @@
 .dark-mode .category-item {
   background-color: rgba(255, 255, 255, 0.05);
 }
+
