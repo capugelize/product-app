@@ -2,6 +2,8 @@ import { Row, Col, Card, Tabs } from 'antd';
 import TaskList from '../components/TaskList';
 import KanbanView from '../components/KanbanView';
 import { useAppContext } from '../context/AppContext';
+import ProductivityAssistant from '../components/ProductivityAssistant';
+import PomodoroTimer from '../components/PomodoroTimer';
 
 const Dashboard = () => {
   const { tasks } = useAppContext();
@@ -74,6 +76,15 @@ const Dashboard = () => {
       <Row gutter={[16, 16]} style={{ marginTop: '16px' }}>
         <Col span={24}>
           <Tabs defaultActiveKey="1" items={items} />
+        </Col>
+      </Row>
+      
+      <Row gutter={[24, 24]} style={{ marginTop: '16px' }}>
+        <Col xs={24} md={12}>
+          <ProductivityAssistant />
+        </Col>
+        <Col xs={24} md={12}>
+          <PomodoroTimer fullWidth />
         </Col>
       </Row>
     </div>
