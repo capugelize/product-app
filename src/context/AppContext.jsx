@@ -108,8 +108,8 @@ const AppContext = ({ children }) => {
     const newTask = {
       ...task,
       id: Date.now().toString(),
-      completed: false,
-      status: 'to_follow',
+      completed: task.status === 'completed',
+      status: task.status || 'not_started',
       createdAt: moment(),
     };
     setTasks([...tasks, newTask]);
@@ -134,7 +134,11 @@ const AppContext = ({ children }) => {
   const editTask = (taskId, updatedTask) => {
     setTasks(tasks.map(task =>
       task.id === taskId
-        ? { ...task, ...updatedTask }
+        ? { 
+            ...task, 
+            ...updatedTask,
+            completed: updatedTask.status === 'completed'
+          }
         : task
     ));
   };

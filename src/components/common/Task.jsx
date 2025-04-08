@@ -42,7 +42,7 @@ const Task = ({ task, onToggle, onEdit, onDelete, onStatusChange }) => {
 
 const getStatusColor = (status) => {
   switch (status) {
-    case 'to_follow':
+    case 'not_started':
       return '#faad14';
     case 'in_progress':
       return '#1890ff';

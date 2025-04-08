@@ -59,6 +59,19 @@ const NewTaskModal = ({ visible, onCancel, onOk }) => {
         </Form.Item>
 
         <Form.Item
+          name="status"
+          label="Statut"
+          initialValue="not_started"
+          rules={[{ required: true, message: 'Veuillez sélectionner un statut' }]}
+        >
+          <Select>
+            <Option value="not_started">⏳ Not started</Option>
+            <Option value="in_progress">🔧 In progress</Option>
+            <Option value="completed">✅ Completed</Option>
+          </Select>
+        </Form.Item>
+
+        <Form.Item
           name="category"
           label="Catégorie"
           rules={[{ required: true, message: 'Veuillez sélectionner une catégorie' }]}

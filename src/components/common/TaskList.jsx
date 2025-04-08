@@ -20,7 +20,7 @@ const TaskList = ({ tasks, onToggle, onEdit, onDelete, onStatusChange }) => {
           optionType="button"
         >
           <Radio.Button value="all">All</Radio.Button>
-          <Radio.Button value="to_follow">🕓 To follow</Radio.Button>
+          <Radio.Button value="not_started">⏳ Not started</Radio.Button>
           <Radio.Button value="in_progress">🔧 In progress</Radio.Button>
           <Radio.Button value="completed">✅ Completed</Radio.Button>
         </Radio.Group>

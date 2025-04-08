@@ -1,0 +1,136 @@
+.tasks-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.tasks-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.create-task-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.create-task-btn:hover {
+  background-color: #45a049;
+}
+
+.task-form-container {
+  margin-bottom: 2rem;
+}
+
+.tasks-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.task-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.task-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.edit-task-btn {
+  padding: 0.5rem 1rem;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.edit-task-btn:hover {
+  background-color: #1976D2;
+}
+
+.task-description {
+  color: #666;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.task-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.task-status,
+.task-priority,
+.task-deadline {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.task-status {
+  background-color: #E3F2FD;
+  color: #1976D2;
+}
+
+.task-status.not_started {
+  background-color: #FFF3E0;
+  color: #EF6C00;
+}
+
+.task-status.in_progress {
+  background-color: #E3F2FD;
+  color: #1976D2;
+}
+
+.task-status.completed {
+  background-color: #E8F5E9;
+  color: #2E7D32;
+}
+
+.task-priority {
+  background-color: #F3E5F5;
+  color: #7B1FA2;
+}
+
+.task-priority.low {
+  background-color: #E8F5E9;
+  color: #2E7D32;
+}
+
+.task-priority.medium {
+  background-color: #FFF3E0;
+  color: #EF6C00;
+}
+
+.task-priority.high {
+  background-color: #FFEBEE;
+  color: #C62828;
+}
+
+.task-deadline {
+  background-color: #E3F2FD;
+  color: #1976D2;
+} 

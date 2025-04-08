@@ -4,7 +4,7 @@ import { Select } from 'antd';
 const { Option } = Select;
 
 const statusOptions = [
-  { value: 'to_follow', label: '🕓 To follow', color: '#faad14' },
+  { value: 'not_started', label: '⏳ Not started', color: '#faad14' },
   { value: 'in_progress', label: '🔧 In progress', color: '#1890ff' },
   { value: 'completed', label: '✅ Completed', color: '#52c41a' }
 ];

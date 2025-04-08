@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const { Option } = Select;
 
 const TaskList = () => {
-  const { tasks, addTask, updateTask, deleteTask, settings } = useAppContext();
+  const { tasks, addTask, editTask, deleteTask, settings } = useAppContext();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
@@ -34,7 +34,7 @@ const TaskList = () => {
       };
 
       if (editingTask) {
-        updateTask(taskData);
+        editTask(taskData.id, taskData);
         message.success('Task updated successfully');
       } else {
         addTask(taskData);
@@ -97,6 +97,11 @@ const TaskList = () => {
                     <Space direction="vertical" size="small">
                       <div>Priority: {task.priority}</div>
                       <div>Category: {task.category}</div>
+                      <div>Status: {
+                        task.status === 'not_started' ? '⏳ Not started' :
+                        task.status === 'in_progress' ? '🔧 In progress' :
+                        task.status === 'completed' ? '✅ Completed' : 'Unknown'
+                      }</div>
                       {task.deadline && (
                         <div>Deadline: {task.deadline.format('YYYY-MM-DD')}</div>
                       )}
@@ -142,6 +147,18 @@ const TaskList = () => {
               <Option value="low">Basse</Option>
               <Option value="medium">Moyenne</Option>
               <Option value="high">Haute</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="status"
+            label="Statut"
+            rules={[{ required: true, message: 'Veuillez sélectionner un statut' }]}
+          >
+            <Select>
+              <Option value="not_started">⏳ Not started</Option>
+              <Option value="in_progress">🔧 In progress</Option>
+              <Option value="completed">✅ Completed</Option>
             </Select>
           </Form.Item>
 
