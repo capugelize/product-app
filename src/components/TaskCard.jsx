@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
-import { Checkbox, Tag, Button } from 'antd';
+import { Checkbox, Tag, Button, Select } from 'antd';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useAppContext } from '../context/AppContext';
+
+const { Option } = Select;
 
 const getCategoryIcon = (category) => {
   switch (category) {
@@ -33,8 +35,27 @@ const getCategoryColor = (category) => {
   }
 };
 
-const TaskCard = ({ task, onEdit, onDelete, onToggleComplete }) => {
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'not_started':
+      return '#faad14';
+    case 'in_progress':
+      return '#1890ff';
+    case 'completed':
+      return '#52c41a';
+    default:
+      return '#d9d9d9';
+  }
+};
+
+const TaskCard = ({ task, onEdit, onDelete, onStatusChange }) => {
   const { settings } = useAppContext();
+
+  const handleStatusChange = (newStatus) => {
+    if (onStatusChange) {
+      onStatusChange(newStatus);
+    }
+  };
 
   return (
     <motion.div
@@ -42,7 +63,15 @@ const TaskCard = ({ task, onEdit, onDelete, onToggleComplete }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       className={`task-card ${task.completed ? 'opacity-60' : ''}`}
-      style={{ backgroundColor: task.color || 'white' }}
+      style={{ 
+        backgroundColor: task.color || 'white',
+        borderLeft: `4px solid ${getStatusColor(task.status)}`,
+        padding: '12px',
+        marginBottom: '8px',
+        borderRadius: '4px',
+        cursor: 'grab',
+        touchAction: 'none'
+      }}
     >
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-start gap-3">
@@ -63,16 +92,32 @@ const TaskCard = ({ task, onEdit, onDelete, onToggleComplete }) => {
           </div>
         </div>
         <div className="flex gap-2">
+          <Select
+            value={task.status}
+            onChange={handleStatusChange}
+            style={{ width: 120 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Option value="not_started">⏳ Not started</Option>
+            <Option value="in_progress">🔧 In progress</Option>
+            <Option value="completed">✅ Completed</Option>
+          </Select>
           <Button
             type="text"
             icon={<PencilIcon className="w-4 h-4" />}
-            onClick={() => onEdit(task)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(task);
+            }}
           />
           <Button
             type="text"
             danger
             icon={<TrashIcon className="w-4 h-4" />}
-            onClick={() => onDelete(task.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(task.id);
+            }}
           />
         </div>
       </div>
