@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const { Option } = Select;
 
 const TaskList = () => {
-  const { tasks, addTask, updateTask, deleteTask } = useAppContext();
+  const { tasks, addTask, updateTask, deleteTask, settings } = useAppContext();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
@@ -110,58 +110,75 @@ const TaskList = () => {
       </AnimatePresence>
 
       <Modal
-        title={editingTask ? 'Edit Task' : 'Add Task'}
+        title={editingTask ? 'Modifier la tâche' : 'Nouvelle tâche'}
         open={isModalVisible}
         onOk={handleOk}
         onCancel={handleCancel}
         destroyOnClose
       >
-        <Form 
-          form={form} 
+        <Form
+          form={form}
           layout="vertical"
           initialValues={{
             priority: 'medium',
             category: 'work',
+            notificationTime: '30',
           }}
         >
           <Form.Item
             name="name"
-            label="Task Name"
-            rules={[{ required: true, message: 'Please input task name!' }]}
+            label="Nom de la tâche"
+            rules={[{ required: true, message: 'Veuillez entrer un nom' }]}
           >
             <Input />
           </Form.Item>
 
           <Form.Item
             name="priority"
-            label="Priority"
-            rules={[{ required: true, message: 'Please select priority!' }]}
+            label="Priorité"
+            rules={[{ required: true, message: 'Veuillez sélectionner une priorité' }]}
           >
             <Select>
-              <Option value="low">Low</Option>
-              <Option value="medium">Medium</Option>
-              <Option value="high">High</Option>
+              <Option value="low">Basse</Option>
+              <Option value="medium">Moyenne</Option>
+              <Option value="high">Haute</Option>
             </Select>
           </Form.Item>
 
           <Form.Item
             name="category"
-            label="Category"
-            rules={[{ required: true, message: 'Please select category!' }]}
+            label="Catégorie"
+            rules={[{ required: true, message: 'Veuillez sélectionner une catégorie' }]}
           >
             <Select>
-              <Option value="work">Work</Option>
-              <Option value="personal">Personal</Option>
-              <Option value="leisure">Leisure</Option>
+              {settings.categories?.map(category => (
+                <Option key={category.id} value={category.id}>
+                  {category.icon} {category.name}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 
-          <Form.Item 
-            name="deadline" 
-            label="Deadline"
-            tooltip="Select a date to automatically place the task in the calendar"
+          <Form.Item
+            name="deadline"
+            label="Date limite"
           >
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker className="w-full" />
+          </Form.Item>
+
+          <Form.Item
+            name="notificationTime"
+            label="Notification avant l'échéance"
+            tooltip="Choisissez quand vous souhaitez être notifié avant l'échéance"
+          >
+            <Select>
+              <Option value="5">5 minutes avant</Option>
+              <Option value="15">15 minutes avant</Option>
+              <Option value="30">30 minutes avant</Option>
+              <Option value="60">1 heure avant</Option>
+              <Option value="120">2 heures avant</Option>
+              <Option value="1440">1 jour avant</Option>
+            </Select>
           </Form.Item>
         </Form>
       </Modal>

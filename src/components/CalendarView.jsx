@@ -59,6 +59,27 @@ const CalendarView = () => {
       .sort((a, b) => (a.order || 0) - (b.order || 0));
   }, [tasks, selectedDate]);
 
+  const getCategoryColor = (category) => {
+    switch (category) {
+      case 'work':
+        return '#1890ff';
+      case 'personal':
+        return '#722ed1';
+      case 'health':
+        return '#52c41a';
+      case 'shopping':
+        return '#faad14';
+      case 'projects':
+        return '#13c2c2';
+      case 'appointments':
+        return '#eb2f96';
+      case 'leisure':
+        return '#fa8c16';
+      default:
+        return '#bfbfbf';
+    }
+  };
+
   const renderCalendar = () => {
     switch (settings.viewMode) {
       case 'day':
@@ -68,15 +89,32 @@ const CalendarView = () => {
             value={selectedDate}
             mode="month"
             fullscreen={false}
-            dateCellRender={(date) => {
+            cellRender={(date) => {
               const dateTasks = tasks.filter(task => 
                 task.deadline?.format('YYYY-MM-DD') === date.format('YYYY-MM-DD')
               );
-              return dateTasks.length > 0 ? (
-                <div className="calendar-task-indicator">
-                  {dateTasks.length} task{dateTasks.length > 1 ? 's' : ''}
-                </div>
-              ) : null;
+              
+              if (dateTasks.length > 0) {
+                const categories = [...new Set(dateTasks.map(task => task.category))];
+                return (
+                  <div className="calendar-task-indicators">
+                    {categories.map(category => (
+                      <div
+                        key={category}
+                        className="calendar-task-indicator"
+                        style={{
+                          backgroundColor: getCategoryColor(category),
+                          opacity: 0.2,
+                          height: '4px',
+                          marginBottom: '2px',
+                          borderRadius: '2px'
+                        }}
+                      />
+                    ))}
+                  </div>
+                );
+              }
+              return null;
             }}
           />
         );

@@ -125,13 +125,17 @@ const PomodoroTimer = () => {
       </Card>
 
       <Modal
-        title="Pomodoro Settings"
+        title="Paramètres du Pomodoro"
         open={isSettingsVisible}
         onOk={handleSettingsOk}
-        onCancel={() => setIsSettingsVisible(false)}
+        onCancel={() => {
+          form.resetFields();
+          setIsSettingsVisible(false);
+        }}
       >
         <Form
           form={form}
+          layout="vertical"
           initialValues={{
             workTime: settings.workTime,
             breakTime: settings.breakTime,
@@ -139,15 +143,16 @@ const PomodoroTimer = () => {
         >
           <Form.Item
             name="workTime"
-            label="Work Duration (minutes)"
-            rules={[{ required: true, message: 'Please input work duration!' }]}
+            label="Temps de travail (minutes)"
+            rules={[{ required: true, message: 'Veuillez entrer un temps de travail' }]}
           >
             <InputNumber min={1} max={60} />
           </Form.Item>
+
           <Form.Item
             name="breakTime"
-            label="Break Duration (minutes)"
-            rules={[{ required: true, message: 'Please input break duration!' }]}
+            label="Temps de pause (minutes)"
+            rules={[{ required: true, message: 'Veuillez entrer un temps de pause' }]}
           >
             <InputNumber min={1} max={60} />
           </Form.Item>

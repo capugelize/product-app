@@ -195,22 +195,31 @@
 }
 
 /* Calendar task indicators */
-.calendar-task-indicator {
+.calendar-task-indicators {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(24, 144, 255, 0.1);
-  color: #1890ff;
-  font-size: 12px;
-  text-align: center;
-  padding: 2px 0;
-  border-radius: 0 0 2px 2px;
+  padding: 2px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.calendar-task-indicator {
+  transition: all 0.3s ease;
+}
+
+.calendar-task-indicator:hover {
+  opacity: 0.4 !important;
 }
 
 .dark-mode .calendar-task-indicator {
-  background: rgba(24, 144, 255, 0.2);
-  color: #69c0ff;
+  opacity: 0.3;
+}
+
+.dark-mode .calendar-task-indicator:hover {
+  opacity: 0.5 !important;
 }
 
 .calendar-tasks-container {
@@ -258,4 +267,77 @@
   opacity: 0;
   transform: translateY(-20px);
   transition: opacity 300ms, transform 300ms;
+}
+
+/* Toast notifications */
+:root {
+  --toastify-color-light: #fff;
+  --toastify-color-dark: #1f1f1f;
+  --toastify-color-info: #1890ff;
+  --toastify-color-success: #52c41a;
+  --toastify-color-warning: #faad14;
+  --toastify-color-error: #ff4d4f;
+}
+
+.dark-mode .toast {
+  background-color: var(--toastify-color-dark) !important;
+  color: #fff !important;
+}
+
+.dark-mode .toast:hover {
+  background-color: #2a2a2a !important;
+}
+
+/* Animation for toast notifications */
+@keyframes toast-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.toast {
+  animation: toast-in-right 0.3s ease-in-out;
+}
+
+/* Category Manager */
+.category-manager {
+  padding: 16px;
+}
+
+.categories-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid;
+  transition: all 0.3s ease;
+}
+
+.category-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.category-icon {
+  font-size: 1.5em;
+  margin-right: 8px;
+}
+
+.category-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.dark-mode .category-item {
+  background-color: rgba(255, 255, 255, 0.05);
 }
