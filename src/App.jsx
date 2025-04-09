@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Menu, theme, Typography, Space, Progress } from 'antd';
+import { Layout, Menu, theme } from 'antd';
 import { 
   HomeOutlined, 
   ClockCircleOutlined, 
@@ -8,51 +8,13 @@ import {
 } from '@ant-design/icons';
 import TaskList from './components/TaskList';
 import PomodoroTimer from './components/PomodoroTimer';
-import AppContext from './context/AppContext';
+import { AppProvider } from './context/AppContext';
 import { PomodoroProvider } from './context/PomodoroContext';
 import Analysis from './components/Analysis';
 import Dashboard from './components/Dashboard';
-import { usePomodoro } from './context/PomodoroContext';
 import './App.css';
 
 const { Header, Content, Sider } = Layout;
-const { Text } = Typography;
-
-const TimerTab = () => {
-  const { timeLeft, isRunning, formatTime, activeTask } = usePomodoro();
-  const totalTime = 25 * 60; // 25 minutes in seconds
-  const progressPercent = (timeLeft / totalTime) * 100;
-
-  if (!isRunning || !activeTask) return null;
-
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      right: 0,
-      padding: '8px 16px',
-      background: '#001529',
-      color: 'white',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '16px',
-      zIndex: 1000,
-      borderBottomLeftRadius: '8px',
-    }}>
-      <Text style={{ color: 'white', margin: 0 }}>
-        {activeTask.name} - Step {activeTask.currentStep}
-      </Text>
-      <Progress
-        type="circle"
-        percent={progressPercent}
-        format={() => formatTime(timeLeft)}
-        strokeColor="#1890ff"
-        size={24}
-        showInfo={true}
-      />
-    </div>
-  );
-};
 
 const App = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -100,7 +62,7 @@ const App = () => {
   };
 
   return (
-    <AppContext>
+    <AppProvider>
       <PomodoroProvider>
         <Layout style={{ minHeight: '100vh' }}>
           <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
@@ -123,7 +85,7 @@ const App = () => {
           </Layout>
         </Layout>
       </PomodoroProvider>
-    </AppContext>
+    </AppProvider>
   );
 };
 
