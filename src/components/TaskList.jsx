@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message } from 'antd';
+import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message, Collapse } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,10 +8,11 @@ import { usePomodoro } from '../context/PomodoroContext';
 import './TaskItem.css';
 
 const { Option } = Select;
+const { Panel } = Collapse;
 
 const TaskList = () => {
   const { tasks, addTask, editTask, deleteTask, updateTaskStatus } = useAppContext();
-  const { activeTask, startPomodoro, stopPomodoro, isRunning, getTaskTimeSpent } = usePomodoro();
+  const { activeTask, startPomodoro, stopPomodoro, isRunning, getTaskTimeSpent, getTaskProgress } = usePomodoro();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
@@ -63,6 +64,37 @@ const TaskList = () => {
     } else {
       startPomodoro(task);
     }
+  };
+
+  const renderTaskProgress = (task) => {
+    const timeSpent = getTaskTimeSpent(task.id);
+    const progress = getTaskProgress(task.id);
+    
+    if (!timeSpent.total) return null;
+
+    return (
+      <Collapse>
+        <Panel header="Time Tracking & Progress" key="1">
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <div>
+              <strong>Total Time Spent:</strong> {timeSpent.total} minutes
+            </div>
+            {Object.entries(timeSpent)
+              .filter(([key]) => key.startsWith('step'))
+              .map(([step, minutes]) => (
+                <div key={step}>
+                  <strong>{step}:</strong> {minutes} minutes
+                  {progress[step] && (
+                    <div style={{ marginLeft: 16, marginTop: 8 }}>
+                      <strong>Progress:</strong> {progress[step]}
+                    </div>
+                  )}
+                </div>
+              ))}
+          </Space>
+        </Panel>
+      </Collapse>
+    );
   };
 
   return (
@@ -121,7 +153,7 @@ const TaskList = () => {
                       {task.deadline && (
                         <div>Deadline: {moment(task.deadline).format('YYYY-MM-DD HH:mm')}</div>
                       )}
-                      <div>Time spent: {getTaskTimeSpent(task.id)} minutes</div>
+                      {renderTaskProgress(task)}
                     </Space>
                   }
                 />

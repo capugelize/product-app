@@ -155,4 +155,5 @@ const AppContext = ({ children }) => {
   );
 };
 
+export const AppProvider = AppContext;
 export default AppContext; 
