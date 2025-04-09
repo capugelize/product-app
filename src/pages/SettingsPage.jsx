@@ -1,5 +1,8 @@
-import { Card, Form, Switch, Select, Button, InputNumber, message } from 'antd';
+import { Card, Form, Switch, Select, Button, InputNumber, message, Divider, Typography } from 'antd';
 import { useAppContext } from '../context/AppContext';
+import CategoryManager from '../components/CategoryManager';
+
+const { Title } = Typography;
 
 const SettingsPage = () => {
   const { settings, updateSettings, resetApp } = useAppContext();
@@ -78,6 +81,16 @@ const SettingsPage = () => {
             </Button>
           </Form.Item>
         </Form>
+
+        <Divider />
+
+        <div style={{ marginTop: 24, marginBottom: 32 }}>
+          <Title level={4}>Gestion des catégories</Title>
+          <p>Personnalisez vos catégories pour mieux organiser vos tâches.</p>
+          <CategoryManager />
+        </div>
+
+        <Divider />
 
         <div style={{ marginTop: 32, borderTop: '1px solid #f0f0f0', paddingTop: 24 }}>
           <h3>Réinitialiser l'application</h3>

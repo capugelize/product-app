@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Form, Input, Select, Button, Space, message } from 'antd';
+import { Modal, Form, Input, Select, Button, Space, message, List, Avatar, Tooltip, ColorPicker } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useAppContext } from '../context/AppContext';
 import EmojiPicker from 'emoji-picker-react';
@@ -54,12 +54,29 @@ const CategoryManager = () => {
   };
 
   const handleDelete = (categoryId) => {
-    const newCategories = categories.filter(c => c.id !== categoryId);
-    updateSettings({
-      ...settings,
-      categories: newCategories,
+    // Vérifier si c'est une catégorie par défaut
+    const isDefaultCategory = ['work', 'personal', 'study', 'health', 'other'].includes(categoryId);
+    
+    if (isDefaultCategory && categories.length <= 5) {
+      message.error('Impossible de supprimer une catégorie par défaut. Vous devez maintenir au moins les 5 catégories de base.');
+      return;
+    }
+    
+    Modal.confirm({
+      title: 'Êtes-vous sûr de vouloir supprimer cette catégorie?',
+      content: 'Les tâches associées à cette catégorie pourront perdre leur catégorisation.',
+      okText: 'Oui',
+      okType: 'danger',
+      cancelText: 'Non',
+      onOk() {
+        const newCategories = categories.filter(c => c.id !== categoryId);
+        updateSettings({
+          ...settings,
+          categories: newCategories,
+        });
+        message.success('Catégorie supprimée');
+      },
     });
-    message.success('Catégorie supprimée');
   };
 
   const onEmojiClick = (emojiObject) => {
@@ -78,34 +95,49 @@ const CategoryManager = () => {
         Ajouter une catégorie
       </Button>
 
-      <div className="categories-list">
-        {categories.map(category => (
-          <div
+      <List
+        itemLayout="horizontal"
+        dataSource={categories}
+        renderItem={category => (
+          <List.Item
             key={category.id}
-            className="category-item"
-            style={{
-              backgroundColor: `${category.color}20`,
-              borderColor: category.color,
-            }}
+            actions={[
+              <Tooltip title="Modifier">
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={() => showModal(category)}
+                />
+              </Tooltip>,
+              <Tooltip title="Supprimer">
+                <Button
+                  type="text"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleDelete(category.id)}
+                  disabled={['work', 'personal', 'study', 'health', 'other'].includes(category.id) && categories.length <= 5}
+                />
+              </Tooltip>
+            ]}
           >
-            <span className="category-icon">{category.icon}</span>
-            <span className="category-name">{category.name}</span>
-            <Space>
-              <Button
-                type="text"
-                icon={<EditOutlined />}
-                onClick={() => showModal(category)}
-              />
-              <Button
-                type="text"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => handleDelete(category.id)}
-              />
-            </Space>
-          </div>
-        ))}
-      </div>
+            <List.Item.Meta
+              avatar={
+                <Avatar style={{ backgroundColor: category.color, fontSize: 20 }}>
+                  {category.icon}
+                </Avatar>
+              }
+              title={category.name}
+              description={
+                <span style={{ color: category.color }}>
+                  {['work', 'personal', 'study', 'health', 'other'].includes(category.id) 
+                    ? "Catégorie par défaut" 
+                    : "Catégorie personnalisée"}
+                </span>
+              }
+            />
+          </List.Item>
+        )}
+      />
 
       <Modal
         title={editingCategory ? 'Modifier la catégorie' : 'Nouvelle catégorie'}
@@ -114,7 +146,9 @@ const CategoryManager = () => {
         onCancel={() => {
           form.resetFields();
           setIsModalVisible(false);
+          setShowEmojiPicker(false);
         }}
+        destroyOnClose={true}
       >
         <Form
           form={form}
@@ -142,6 +176,7 @@ const CategoryManager = () => {
                 value={form.getFieldValue('icon')}
                 readOnly
                 placeholder="Cliquez pour choisir un emoji"
+                suffix={form.getFieldValue('icon')}
               />
               {showEmojiPicker && (
                 <div style={{ position: 'absolute', zIndex: 1000, marginTop: 8 }}>
@@ -156,15 +191,7 @@ const CategoryManager = () => {
             label="Couleur"
             rules={[{ required: true, message: 'Veuillez sélectionner une couleur' }]}
           >
-            <Select>
-              <Select.Option value="#1890ff">Bleu</Select.Option>
-              <Select.Option value="#722ed1">Violet</Select.Option>
-              <Select.Option value="#52c41a">Vert</Select.Option>
-              <Select.Option value="#faad14">Jaune</Select.Option>
-              <Select.Option value="#13c2c2">Cyan</Select.Option>
-              <Select.Option value="#eb2f96">Rose</Select.Option>
-              <Select.Option value="#fa8c16">Orange</Select.Option>
-            </Select>
+            <ColorPicker />
           </Form.Item>
         </Form>
       </Modal>

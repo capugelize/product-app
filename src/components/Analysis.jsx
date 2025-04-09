@@ -25,6 +25,14 @@ const Analysis = () => {
     optional: []
   });
 
+  // Initial setup for productivity analysis
+  useEffect(() => {
+    if (tasks.length > 0) {
+      analyzeProductivityPatterns();
+      classifyTasksWithAI();
+    }
+  }, [tasks, taskProductivity, taskTimeSpent]);
+
   // Analyze productivity patterns based on task data
   useEffect(() => {
     if (Object.keys(taskTimeSpent).length > 0) {
@@ -39,91 +47,65 @@ const Analysis = () => {
     }
   }, [tasks, taskProductivity]);
 
-  // AI task classification based on priority, status, and productivity
-  const classifyTasksWithAI = () => {
-    // Initialize task categories
-    const classified = {
-      urgent: [],
-      important: [],
-      routine: [],
-      optional: []
-    };
-
-    // AI classification logic
-    tasks.forEach(task => {
-      // Get productivity data if available
-      const productivity = taskProductivity[task.id]?.average || 0;
-      const timeSpent = taskTimeSpent[task.id]?.total || 0;
-      
-      // Calculate task score based on multiple factors
-      let score = 0;
-      
-      // Priority factor (high impact)
-      if (task.priority === 'high') score += 50;
-      else if (task.priority === 'medium') score += 30;
-      else score += 10;
-      
-      // Deadline factor (if applicable - simulated here)
-      const hasNearDeadline = task.dueDate ? moment(task.dueDate).diff(moment(), 'days') < 2 : false;
-      if (hasNearDeadline) score += 30;
-      
-      // Status factor
-      if (task.status === 'in_progress') score += 15;
-      else if (task.status === 'not_started') score += 10;
-      
-      // Productivity factor (boost score if task has high productivity)
-      if (productivity > 70) score += 15;
-      else if (productivity > 50) score += 10;
-      
-      // Task complexity factor (estimated by time spent)
-      if (timeSpent > 60) score += 10; // Complex tasks get priority
-      
-      // Classify based on final score
-      const taskWithScore = {
-        ...task,
-        aiScore: score,
-        productivity: productivity,
-        timeSpent: timeSpent
-      };
-      
-      if (score >= 70) classified.urgent.push(taskWithScore);
-      else if (score >= 50) classified.important.push(taskWithScore);
-      else if (score >= 30) classified.routine.push(taskWithScore);
-      else classified.optional.push(taskWithScore);
-    });
-    
-    // Sort each category by score (highest first)
-    Object.keys(classified).forEach(category => {
-      classified[category].sort((a, b) => b.aiScore - a.aiScore);
-    });
-    
-    setClassifiedTasks(classified);
-  };
-
   // Analyze productivity patterns and find the optimal times
   const analyzeProductivityPatterns = () => {
     // Extract all productivity data with timestamps
     const productivityData = [];
     
-    // This is a simplified example - in a real app, you would store timestamps with each entry
-    // Here we're simulating this data based on the existing structures
+    // Get current timestamp to associate with task data (for this session)
+    const currentHour = parseInt(moment().format('H'));
+    
+    // Analyze real productivity data from tasks
     Object.entries(taskProductivity).forEach(([taskId, data]) => {
       Object.entries(data).forEach(([key, value]) => {
         if (key !== 'average' && typeof value === 'number') {
-          // Extract time information (simulated for this implementation)
-          // In a real app, you would have actual timestamps for each entry
+          // Use task creation time or completion time as basis for timestamp
+          // Find the corresponding task to get more info
+          const task = tasks.find(t => t.id === taskId);
+          
+          // Extract hour of day from task data
+          let taskHour;
+          if (task?.createdAt) {
+            // Use task creation time if available
+            taskHour = moment(task.createdAt).hour();
+          } else if (task?.deadline) {
+            // Use task deadline if creation time not available
+            taskHour = moment(task.deadline).hour();
+          } else {
+            // Fallback to current hour with slight variation
+            taskHour = (currentHour + (key === 'step1' ? 0 : key === 'step2' ? 1 : -1)) % 24;
+          }
+          
           const timeInfo = {
             taskId,
             step: key,
             productivity: value,
             timeSpent: taskTimeSpent[taskId]?.[key] || 0,
-            // Simulate a timestamp (would be real in actual implementation)
-            timestamp: Math.floor(Math.random() * 24), // Random hour between 0-23
+            timestamp: taskHour
           }
           productivityData.push(timeInfo);
         }
       });
     });
+
+    // If no productivity data available, generate minimal sample data
+    if (productivityData.length === 0 && tasks.length > 0) {
+      // Sample data based on task status
+      tasks.forEach(task => {
+        const taskHour = task.createdAt ? moment(task.createdAt).hour() : currentHour;
+        const sampleProductivity = 
+          task.status === 'completed' ? 85 : 
+          task.status === 'in_progress' ? 60 : 40;
+        
+        productivityData.push({
+          taskId: task.id,
+          step: 'step1',
+          productivity: sampleProductivity,
+          timeSpent: 25,
+          timestamp: taskHour
+        });
+      });
+    }
 
     // Group by hour of day
     const productivityByHour = {};
@@ -173,6 +155,88 @@ const Analysis = () => {
       optimalDuration,
       suggestedSchedule
     });
+  };
+
+  // AI task classification based on priority, status, and productivity
+  const classifyTasksWithAI = () => {
+    // Initialize task categories
+    const classified = {
+      urgent: [],
+      important: [],
+      routine: [],
+      optional: []
+    };
+
+    // AI classification logic
+    tasks.forEach(task => {
+      // Get productivity data if available
+      const productivity = taskProductivity[task.id]?.average || 0;
+      const timeSpent = taskTimeSpent[task.id]?.total || 0;
+      
+      // Calculate task score based on multiple factors
+      let score = 0;
+      
+      // Priority factor (high impact)
+      if (task.priority === 'high') score += 50;
+      else if (task.priority === 'medium') score += 30;
+      else score += 10;
+      
+      // Deadline factor (if applicable)
+      if (task.deadline) {
+        const daysUntilDeadline = moment(task.deadline).diff(moment(), 'days');
+        
+        if (daysUntilDeadline < 0) {
+          // Task is overdue
+          score += 40;
+        } else if (daysUntilDeadline === 0) {
+          // Deadline is today
+          score += 35;
+        } else if (daysUntilDeadline <= 1) {
+          // Deadline is tomorrow
+          score += 30;
+        } else if (daysUntilDeadline <= 3) {
+          // Deadline within 3 days
+          score += 25;
+        } else if (daysUntilDeadline <= 7) {
+          // Deadline within a week
+          score += 20;
+        } else {
+          // Far deadline
+          score += 10;
+        }
+      }
+      
+      // Status factor
+      if (task.status === 'in_progress') score += 15;
+      else if (task.status === 'completed') score -= 15; // Lower priority for completed tasks
+      
+      // Productivity factor (boost score if task has high productivity)
+      if (productivity > 70) score += 15;
+      else if (productivity > 50) score += 10;
+      
+      // Task complexity factor (estimated by time spent)
+      if (timeSpent > 60) score += 10; // Complex tasks get priority
+      
+      // Classify based on final score
+      const taskWithScore = {
+        ...task,
+        aiScore: score,
+        productivity: productivity,
+        timeSpent: timeSpent
+      };
+      
+      if (score >= 70) classified.urgent.push(taskWithScore);
+      else if (score >= 50) classified.important.push(taskWithScore);
+      else if (score >= 30) classified.routine.push(taskWithScore);
+      else classified.optional.push(taskWithScore);
+    });
+    
+    // Sort each category by score (highest first)
+    Object.keys(classified).forEach(category => {
+      classified[category].sort((a, b) => b.aiScore - a.aiScore);
+    });
+    
+    setClassifiedTasks(classified);
   };
 
   const columns = [

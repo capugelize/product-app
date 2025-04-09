@@ -4,7 +4,8 @@ import {
   HomeOutlined, 
   ClockCircleOutlined, 
   BarChartOutlined,
-  DashboardOutlined
+  DashboardOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 import TaskList from './components/TaskList';
 import PomodoroTimer from './components/PomodoroTimer';
@@ -12,6 +13,7 @@ import { AppProvider } from './context/AppContext';
 import { PomodoroProvider } from './context/PomodoroContext';
 import Analysis from './components/Analysis';
 import Dashboard from './components/Dashboard';
+import SettingsPage from './pages/SettingsPage';
 import './App.css';
 
 const { Header, Content, Sider } = Layout;
@@ -44,6 +46,11 @@ const App = () => {
       icon: <BarChartOutlined />,
       label: 'Analysis',
     },
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: 'Settings',
+    },
   ];
 
   const renderContent = () => {
@@ -56,6 +63,8 @@ const App = () => {
         return <PomodoroTimer />;
       case 'analysis':
         return <Analysis />;
+      case 'settings':
+        return <SettingsPage />;
       default:
         return <Dashboard />;
     }
