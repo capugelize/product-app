@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message, Collapse, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message, Collapse, Tag, Typography } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined, ClockCircleOutlined, RobotOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
@@ -9,13 +9,16 @@ import './TaskItem.css';
 
 const { Option } = Select;
 const { Panel } = Collapse;
+const { Text } = Typography;
 
 const TaskList = () => {
   const { tasks, addTask, editTask, deleteTask, updateTaskStatus } = useAppContext();
-  const { activeTask, startPomodoro, stopPomodoro, isRunning, getTaskTimeSpent, getTaskProgress, timeLeft } = usePomodoro();
+  const { activeTask, startPomodoro, stopPomodoro, isRunning, getTaskTimeSpent, getTaskProgress, timeLeft, taskProductivity } = usePomodoro();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
+  const [aiSortedTasks, setAiSortedTasks] = useState([]);
+  const [useSortedTasks, setUseSortedTasks] = useState(false);
 
   const CATEGORIES = [
     { value: 'work', label: '💼 Work', emoji: '💼' },
@@ -30,6 +33,102 @@ const TaskList = () => {
     { value: 'in_progress', label: '🔧 In Progress', emoji: '🔧' },
     { value: 'completed', label: '✅ Completed', emoji: '✅' }
   ];
+
+  // Classifier l'ordre des tâches en utilisant l'IA
+  useEffect(() => {
+    if (tasks.length > 0) {
+      classifyTasksWithAI();
+    }
+  }, [tasks, taskProductivity, getTaskProgress]);
+
+  const classifyTasksWithAI = () => {
+    // Créer une copie des tâches pour le classement
+    const tasksCopy = [...tasks];
+    
+    // Calculer un score pour chaque tâche basé sur plusieurs facteurs
+    const tasksWithScores = tasksCopy.map(task => {
+      let score = 0;
+      
+      // 1. Facteur de priorité (impact élevé)
+      if (task.priority === 'high') score += 50;
+      else if (task.priority === 'medium') score += 30;
+      else score += 10;
+      
+      // 2. Facteur d'échéance
+      if (task.deadline) {
+        const daysUntilDeadline = moment(task.deadline).diff(moment(), 'days');
+        
+        if (daysUntilDeadline < 0) {
+          // Tâche en retard
+          score += 40;
+        } else if (daysUntilDeadline === 0) {
+          // Échéance aujourd'hui
+          score += 35;
+        } else if (daysUntilDeadline <= 1) {
+          // Échéance demain
+          score += 30;
+        } else if (daysUntilDeadline <= 3) {
+          // Échéance dans les 3 jours
+          score += 25;
+        } else if (daysUntilDeadline <= 7) {
+          // Échéance dans la semaine
+          score += 20;
+        } else {
+          // Échéance lointaine
+          score += 10;
+        }
+      }
+      
+      // 3. Facteur de statut
+      if (task.status === 'in_progress') {
+        score += 15; // Favoriser les tâches déjà en cours
+      } else if (task.status === 'completed') {
+        score -= 30; // Déprioriser les tâches terminées
+      }
+      
+      // 4. Facteur de productivité (si disponible)
+      const productivity = taskProductivity[task.id]?.average || 0;
+      if (productivity > 0) {
+        if (productivity < 40) {
+          // Tâches à faible productivité peuvent nécessiter plus d'attention
+          score += 10;
+        } else if (productivity >= 70) {
+          // Tâches à haute productivité - l'utilisateur est efficace dessus
+          score += 5;
+        }
+      }
+      
+      // 5. Facteur de progression
+      const progress = getTaskProgress(task.id);
+      if (progress && Object.keys(progress).length > 0) {
+        const avgProgress = Object.values(progress).reduce((a, b) => a + b, 0) / Object.keys(progress).length;
+        
+        if (avgProgress > 75) {
+          // Presque terminé - donner une priorité pour finir
+          score += 15;
+        } else if (avgProgress > 25) {
+          // Déjà bien avancé
+          score += 10;
+        }
+      }
+      
+      // Retourner la tâche avec son score AI
+      return {
+        ...task,
+        aiScore: score
+      };
+    });
+    
+    // Trier les tâches par score (décroissant)
+    tasksWithScores.sort((a, b) => b.aiScore - a.aiScore);
+    
+    // Mettre à jour l'état
+    setAiSortedTasks(tasksWithScores);
+  };
+
+  const toggleSortMode = () => {
+    setUseSortedTasks(!useSortedTasks);
+  };
 
   const showModal = (task = null) => {
     setEditingTask(task);
@@ -156,9 +255,18 @@ const TaskList = () => {
     <Card
       title="Tasks"
       extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
-          Add Task
-        </Button>
+        <Space>
+          <Button 
+            type={useSortedTasks ? "primary" : "default"}
+            icon={<RobotOutlined />}
+            onClick={toggleSortMode}
+          >
+            {useSortedTasks ? "Using AI Sort" : "Use AI Sort"}
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
+            Add Task
+          </Button>
+        </Space>
       }
     >
       {isRunning && activeTask && (
@@ -168,9 +276,17 @@ const TaskList = () => {
           <span className="task-name">{activeTask.name}</span>
         </div>
       )}
+      
+      {useSortedTasks && (
+        <div style={{ marginBottom: 16, backgroundColor: '#f6ffed', padding: 12, borderRadius: 4, border: '1px solid #b7eb8f' }}>
+          <Text strong>AI-powered task ordering enabled. </Text>
+          <Text>Tasks are sorted based on priority, deadlines, progress, and productivity patterns.</Text>
+        </div>
+      )}
+      
       <AnimatePresence>
         <List
-          dataSource={tasks}
+          dataSource={useSortedTasks ? aiSortedTasks : tasks}
           renderItem={task => (
             <motion.div
               key={task.id}
@@ -202,7 +318,16 @@ const TaskList = () => {
                 ]}
               >
                 <List.Item.Meta
-                  title={task.name}
+                  title={
+                    <Space>
+                      {task.name}
+                      {useSortedTasks && task.aiScore && (
+                        <Tag color={task.aiScore > 70 ? 'red' : task.aiScore > 40 ? 'orange' : 'green'}>
+                          AI Score: {task.aiScore}
+                        </Tag>
+                      )}
+                    </Space>
+                  }
                   description={
                     <Space direction="vertical" size="small">
                       <Space>
