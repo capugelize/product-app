@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message, Collapse } from 'antd';
+import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message, Collapse, Tag } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,6 +17,20 @@ const TaskList = () => {
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
 
+  const CATEGORIES = [
+    { value: 'work', label: '💼 Work', emoji: '💼' },
+    { value: 'personal', label: '🏠 Personal', emoji: '🏠' },
+    { value: 'study', label: '📚 Study', emoji: '📚' },
+    { value: 'health', label: '💪 Health', emoji: '💪' },
+    { value: 'other', label: '📝 Other', emoji: '📝' }
+  ];
+
+  const STATUSES = [
+    { value: 'not_started', label: '⏳ Not Started', emoji: '⏳' },
+    { value: 'in_progress', label: '🔧 In Progress', emoji: '🔧' },
+    { value: 'completed', label: '✅ Completed', emoji: '✅' }
+  ];
+
   const showModal = (task = null) => {
     setEditingTask(task);
     if (task) {
@@ -24,6 +38,7 @@ const TaskList = () => {
         name: task.name,
         priority: task.priority,
         category: task.category,
+        status: task.status,
         deadline: task.deadline ? moment(task.deadline) : null,
       });
     } else {
@@ -37,7 +52,7 @@ const TaskList = () => {
       const taskData = {
         ...values,
         deadline: values.deadline ? values.deadline.format() : null,
-        status: 'not_started',
+        status: values.status || 'not_started',
       };
 
       if (editingTask) {
@@ -97,6 +112,40 @@ const TaskList = () => {
     );
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'success';
+      case 'in_progress':
+        return 'processing';
+      case 'not_started':
+        return 'default';
+      default:
+        return 'default';
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high':
+        return 'red';
+      case 'medium':
+        return 'orange';
+      case 'low':
+        return 'green';
+      default:
+        return 'default';
+    }
+  };
+
+  const getCategoryEmoji = (category) => {
+    return CATEGORIES.find(c => c.value === category)?.emoji || '📝';
+  };
+
+  const getStatusEmoji = (status) => {
+    return STATUSES.find(s => s.value === status)?.emoji || '⏳';
+  };
+
   return (
     <Card
       title="Tasks"
@@ -143,13 +192,17 @@ const TaskList = () => {
                   title={task.name}
                   description={
                     <Space direction="vertical" size="small">
-                      <div>Priority: {task.priority}</div>
-                      <div>Category: {task.category}</div>
-                      <div>Status: {
-                        task.status === 'not_started' ? '⏳ Not started' :
-                        task.status === 'in_progress' ? '🔧 In progress' :
-                        task.status === 'completed' ? '✅ Completed' : 'Unknown'
-                      }</div>
+                      <Space>
+                        <Tag color={getPriorityColor(task.priority)}>
+                          {task.priority}
+                        </Tag>
+                        <Tag color={getStatusColor(task.status)}>
+                          {getStatusEmoji(task.status)} {STATUSES.find(s => s.value === task.status)?.label.split(' ')[1] || 'Unknown'}
+                        </Tag>
+                        <Tag>
+                          {getCategoryEmoji(task.category)} {CATEGORIES.find(c => c.value === task.category)?.label.split(' ')[1] || 'Other'}
+                        </Tag>
+                      </Space>
                       {task.deadline && (
                         <div>Deadline: {moment(task.deadline).format('YYYY-MM-DD HH:mm')}</div>
                       )}
@@ -202,9 +255,25 @@ const TaskList = () => {
             initialValue="work"
           >
             <Select>
-              <Option value="work">Work</Option>
-              <Option value="personal">Personal</Option>
-              <Option value="study">Study</Option>
+              {CATEGORIES.map(category => (
+                <Option key={category.value} value={category.value}>
+                  {category.label}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="status"
+            label="Status"
+            initialValue="not_started"
+          >
+            <Select>
+              {STATUSES.map(status => (
+                <Option key={status.value} value={status.value}>
+                  {status.label}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 

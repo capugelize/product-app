@@ -10,6 +10,7 @@ export const PomodoroProvider = ({ children }) => {
   const [sessionStartTime, setSessionStartTime] = useState(null);
   const [taskTimeSpent, setTaskTimeSpent] = useState({});
   const [taskProgress, setTaskProgress] = useState({});
+  const [taskProductivity, setTaskProductivity] = useState({});
   const [currentStep, setCurrentStep] = useState(1);
   const [timerInterval, setTimerInterval] = useState(null);
 
@@ -17,11 +18,15 @@ export const PomodoroProvider = ({ children }) => {
   useEffect(() => {
     const savedTimeSpent = localStorage.getItem('taskTimeSpent');
     const savedProgress = localStorage.getItem('taskProgress');
+    const savedProductivity = localStorage.getItem('taskProductivity');
     if (savedTimeSpent) {
       setTaskTimeSpent(JSON.parse(savedTimeSpent));
     }
     if (savedProgress) {
       setTaskProgress(JSON.parse(savedProgress));
+    }
+    if (savedProductivity) {
+      setTaskProductivity(JSON.parse(savedProductivity));
     }
   }, []);
 
@@ -29,7 +34,8 @@ export const PomodoroProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('taskTimeSpent', JSON.stringify(taskTimeSpent));
     localStorage.setItem('taskProgress', JSON.stringify(taskProgress));
-  }, [taskTimeSpent, taskProgress]);
+    localStorage.setItem('taskProductivity', JSON.stringify(taskProductivity));
+  }, [taskTimeSpent, taskProgress, taskProductivity]);
 
   // Timer effect
   useEffect(() => {
@@ -99,9 +105,37 @@ export const PomodoroProvider = ({ children }) => {
             [`step${currentStep}`]: progress
           }
         }));
+
+        // Calculate productivity score (0-100) based on time spent and progress
+        const productivityScore = calculateProductivityScore(timeSpent, progress);
+        setTaskProductivity(prev => ({
+          ...prev,
+          [taskId]: {
+            ...prev[taskId],
+            [`step${currentStep}`]: productivityScore,
+            average: calculateAverageProductivity(prev[taskId], productivityScore)
+          }
+        }));
       }
     }
     resetPomodoro();
+  };
+
+  const calculateProductivityScore = (timeSpent, progress) => {
+    // Simple productivity calculation based on time spent and progress
+    // You can adjust this formula based on your needs
+    const baseScore = 100;
+    const timeFactor = Math.min(1, 25 / timeSpent); // 25 minutes is ideal
+    const progressFactor = progress.length > 50 ? 1 : progress.length / 50;
+    return Math.round(baseScore * timeFactor * progressFactor);
+  };
+
+  const calculateAverageProductivity = (taskProductivity, newScore) => {
+    if (!taskProductivity) return newScore;
+    const scores = Object.values(taskProductivity)
+      .filter(score => typeof score === 'number')
+      .concat(newScore);
+    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
   };
 
   const resetPomodoro = () => {
@@ -146,6 +180,10 @@ export const PomodoroProvider = ({ children }) => {
     return taskProgress[taskId] || {};
   };
 
+  const getTaskProductivity = (taskId) => {
+    return taskProductivity[taskId] || { average: 0 };
+  };
+
   const nextStep = () => {
     setCurrentStep(prev => prev + 1);
   };
@@ -162,6 +200,7 @@ export const PomodoroProvider = ({ children }) => {
       currentStep,
       taskTimeSpent,
       taskProgress,
+      taskProductivity,
       startPomodoro,
       pausePomodoro,
       resumePomodoro,
@@ -169,6 +208,7 @@ export const PomodoroProvider = ({ children }) => {
       formatTime,
       getTaskTimeSpent,
       getTaskProgress,
+      getTaskProductivity,
       nextStep,
       previousStep
     }}>
