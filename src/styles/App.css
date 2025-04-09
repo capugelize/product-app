@@ -1,0 +1,54 @@
+.app {
+  min-height: 100vh;
+  transition: background-color 0.3s ease;
+}
+
+.app.dark-mode {
+  background-color: #141414;
+  color: #fff;
+}
+
+.app.dark-mode .ant-layout {
+  background: #000;
+}
+
+.app.dark-mode .ant-layout-header {
+  background: #141414;
+}
+
+.app.dark-mode .ant-card {
+  background: #1f1f1f;
+  border-color: #303030;
+}
+
+.app.dark-mode .ant-card-head {
+  border-bottom-color: #303030;
+}
+
+.app.dark-mode .ant-typography {
+  color: #fff;
+}
+
+.app.dark-mode .ant-form-item-label > label {
+  color: #fff;
+}
+
+.app.dark-mode .ant-input,
+.app.dark-mode .ant-select-selector {
+  background-color: #1f1f1f;
+  border-color: #303030;
+  color: #fff;
+}
+
+.app.dark-mode .ant-input-number-input {
+  background-color: #1f1f1f;
+  color: #fff;
+}
+
+.app.dark-mode .ant-switch {
+  background-color: #303030;
+}
+
+.app.dark-mode .ant-switch-checked {
+  background-color: #1890ff;
+} 

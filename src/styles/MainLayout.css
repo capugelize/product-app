@@ -1,0 +1,35 @@
+.site-layout-background {
+  background: #fff;
+}
+
+.logo {
+  height: 32px;
+  margin: 16px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Styles pour le mode sombre */
+.app.dark-mode .site-layout-background {
+  background: #141414;
+}
+
+.app.dark-mode .ant-layout-sider {
+  background: #141414;
+}
+
+.app.dark-mode .ant-menu {
+  background: #141414;
+}
+
+.app.dark-mode .ant-menu-item {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.app.dark-mode .ant-menu-item-selected {
+  color: #fff;
+  background: #1890ff;
+}
+
+.app.dark-mode .ant-menu-item:hover {
+  color: #fff;
+} 

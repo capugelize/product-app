@@ -1,0 +1,33 @@
+.pomodoro-timer-card {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 300px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+}
+
+.pomodoro-header {
+  text-align: center;
+}
+
+.pomodoro-timer {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.pomodoro-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pomodoro-timer-card .ant-progress-circle {
+  transition: all 0.3s ease;
+}
+
+.pomodoro-timer-card .ant-progress-circle:hover {
+  transform: scale(1.05);
+} 

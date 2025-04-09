@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Card, Button, List, Modal, Form, Input, Select, DatePicker, Space, message } from 'antd';
+import { Card, Button, List, Modal, Form, Input, Select, DatePicker, Space, message, InputNumber } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import moment from 'moment';
 
 const { Option } = Select;
 
@@ -103,7 +104,7 @@ const TaskList = () => {
                         task.status === 'completed' ? '✅ Completed' : 'Unknown'
                       }</div>
                       {task.deadline && (
-                        <div>Deadline: {task.deadline.format('YYYY-MM-DD')}</div>
+                        <div>Deadline: {moment(task.deadline).format('YYYY-MM-DD')}</div>
                       )}
                     </Space>
                   }
@@ -181,6 +182,14 @@ const TaskList = () => {
             label="Date limite"
           >
             <DatePicker className="w-full" />
+          </Form.Item>
+
+          <Form.Item
+            name="duration"
+            label="Durée estimée (minutes)"
+            rules={[{ required: true, message: 'Veuillez entrer une durée' }]}
+          >
+            <InputNumber min={1} max={480} className="w-full" />
           </Form.Item>
 
           <Form.Item

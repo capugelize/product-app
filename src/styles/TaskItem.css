@@ -1,0 +1,26 @@
+.task-item {
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+  cursor: grab;
+}
+
+.task-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.task-item.active-pomodoro {
+  border: 2px solid #52c41a;
+  background-color: rgba(82, 196, 26, 0.05);
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.task-item .ant-card-body {
+  padding: 12px;
+} 

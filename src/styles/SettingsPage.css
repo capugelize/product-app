@@ -1,0 +1,19 @@
+.settings-page {
+  padding: 24px;
+}
+
+.settings-page .ant-card {
+  margin-bottom: 24px;
+}
+
+.settings-page .ant-typography {
+  margin-bottom: 24px;
+}
+
+.settings-page .ant-form {
+  max-width: 600px;
+}
+
+.settings-page .ant-form-item {
+  margin-bottom: 24px;
+} 

@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Card, Typography, List, Tag, Space, Button, Modal, Form, InputNumber, Select, DatePicker, TimePicker } from 'antd';
+import { Card, Typography, List, Tag, Space, Button, Modal, Form, InputNumber, Select, DatePicker, Popconfirm, Input } from 'antd';
 import moment from 'moment';
 import 'moment/locale/fr';
+import { useAppContext } from '../context/AppContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 const ProductivityAssistant = () => {
-  const [tasks, setTasks] = useState([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [form] = Form.useForm();
+  const { tasks, editTask, deleteTask } = useAppContext();
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [editForm] = Form.useForm();
 
   const productivityHours = {
     morning: { start: '09:00', end: '12:00' },
@@ -32,8 +34,9 @@ const ProductivityAssistant = () => {
     const schedule = [];
     let currentTime = moment().startOf('day').add(9, 'hours'); // Start at 9 AM
 
-    // Sort tasks by priority and deadline
-    const sortedTasks = [...tasks].sort((a, b) => {
+    // Filter out completed tasks and sort by priority and deadline
+    const activeTasks = tasks.filter(task => task.status !== 'completed');
+    const sortedTasks = [...activeTasks].sort((a, b) => {
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
         return priorityOrder[a.priority] - priorityOrder[b.priority];
@@ -42,7 +45,7 @@ const ProductivityAssistant = () => {
     });
 
     for (const task of sortedTasks) {
-      const duration = calculatePomodoroBlocks(task.duration);
+      const duration = calculatePomodoroBlocks(task.duration || 25);
       const endTime = moment(currentTime).add(duration, 'minutes');
 
       // Skip to next productivity hour if current time is outside
@@ -55,13 +58,15 @@ const ProductivityAssistant = () => {
       }
 
       schedule.push({
+        id: task.id,
         title: task.name,
         start: currentTime.format('HH:mm'),
         end: endTime.format('HH:mm'),
         date: currentTime.format('YYYY-MM-DD'),
         pomodoro: true,
         priority: task.priority,
-        duration: task.duration
+        duration: task.duration || 25,
+        status: task.status
       });
 
       currentTime = endTime;
@@ -70,18 +75,36 @@ const ProductivityAssistant = () => {
     return schedule;
   };
 
-  const handleAddTask = () => {
-    form.validateFields().then(values => {
-      const newTask = {
-        ...values,
-        deadline: values.deadline.format('YYYY-MM-DD'),
-        duration: values.duration || 25, // Default to one pomodoro
-        priority: values.priority || 'medium'
-      };
-      setTasks([...tasks, newTask]);
-      setIsModalVisible(false);
-      form.resetFields();
+  const handleEditTask = (task) => {
+    setEditingTask(task);
+    editForm.setFieldsValue({
+      name: task.title,
+      priority: task.priority,
+      duration: task.duration,
+      deadline: task.deadline ? moment(task.deadline) : null,
+      category: task.category || 'work'
     });
+    setIsEditModalVisible(true);
+  };
+
+  const handleEditSubmit = () => {
+    editForm.validateFields().then(values => {
+      const updatedTask = {
+        ...values,
+        deadline: values.deadline ? values.deadline.format('YYYY-MM-DD') : null,
+        duration: values.duration || 25,
+        priority: values.priority || 'medium',
+        category: values.category || 'work'
+      };
+      editTask(editingTask.id, updatedTask);
+      setIsEditModalVisible(false);
+      editForm.resetFields();
+      setEditingTask(null);
+    });
+  };
+
+  const handleDeleteTask = (taskId) => {
+    deleteTask(taskId);
   };
 
   const schedule = generateSchedule(tasks);
@@ -90,23 +113,40 @@ const ProductivityAssistant = () => {
     <Card>
       <Space direction="vertical" style={{ width: '100%' }}>
         <Title level={3}>Assistant de Productivité</Title>
-        
-        <Button type="primary" onClick={() => setIsModalVisible(true)}>
-          Ajouter une tâche
-        </Button>
 
         <List
           dataSource={schedule}
           renderItem={item => (
             <List.Item>
-              <Space direction="vertical">
-                <Text strong>{item.title}</Text>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                  <Text strong>{item.title}</Text>
+                  <Space>
+                    <Button type="link" onClick={() => handleEditTask(item)}>
+                      Modifier
+                    </Button>
+                    <Popconfirm
+                      title="Supprimer la tâche"
+                      description="Êtes-vous sûr de vouloir supprimer cette tâche ?"
+                      onConfirm={() => handleDeleteTask(item.id)}
+                      okText="Oui"
+                      cancelText="Non"
+                    >
+                      <Button type="link" danger>
+                        Supprimer
+                      </Button>
+                    </Popconfirm>
+                  </Space>
+                </Space>
                 <Space>
                   <Tag color={item.priority === 'high' ? 'red' : item.priority === 'medium' ? 'orange' : 'green'}>
                     {item.priority}
                   </Tag>
                   <Text>{item.date} {item.start} - {item.end}</Text>
                   <Text type="secondary">({item.duration} min)</Text>
+                  <Tag color={item.status === 'completed' ? 'success' : item.status === 'in_progress' ? 'processing' : 'default'}>
+                    {item.status === 'completed' ? '✅ Completed' : item.status === 'in_progress' ? '🔧 In Progress' : '⏳ Not Started'}
+                  </Tag>
                 </Space>
               </Space>
             </List.Item>
@@ -115,18 +155,22 @@ const ProductivityAssistant = () => {
       </Space>
 
       <Modal
-        title="Ajouter une tâche"
-        open={isModalVisible}
-        onOk={handleAddTask}
-        onCancel={() => setIsModalVisible(false)}
+        title="Modifier la tâche"
+        open={isEditModalVisible}
+        onOk={handleEditSubmit}
+        onCancel={() => {
+          setIsEditModalVisible(false);
+          editForm.resetFields();
+          setEditingTask(null);
+        }}
       >
-        <Form form={form} layout="vertical">
+        <Form form={editForm} layout="vertical">
           <Form.Item
             name="name"
             label="Nom de la tâche"
             rules={[{ required: true, message: 'Veuillez entrer un nom' }]}
           >
-            <input />
+            <Input />
           </Form.Item>
 
           <Form.Item
@@ -155,6 +199,22 @@ const ProductivityAssistant = () => {
             rules={[{ required: true, message: 'Veuillez sélectionner une date' }]}
           >
             <DatePicker />
+          </Form.Item>
+
+          <Form.Item
+            name="category"
+            label="Catégorie"
+            rules={[{ required: true, message: 'Veuillez sélectionner une catégorie' }]}
+          >
+            <Select>
+              <Option value="work">Travail</Option>
+              <Option value="personal">Personnel</Option>
+              <Option value="health">Santé</Option>
+              <Option value="shopping">Courses</Option>
+              <Option value="projects">Projets</Option>
+              <Option value="appointments">Rendez-vous</Option>
+              <Option value="leisure">Loisirs</Option>
+            </Select>
           </Form.Item>
         </Form>
       </Modal>

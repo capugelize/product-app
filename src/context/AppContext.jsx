@@ -25,42 +25,6 @@ const initialSettings = {
   ],
 };
 
-const initialTasks = [
-  {
-    id: '1',
-    name: 'Créer une interface utilisateur',
-    description: 'Concevoir et implémenter une interface utilisateur pour l\'application',
-    completed: false,
-    status: 'to_follow',
-    priority: 'high',
-    category: 'work',
-    deadline: moment().add(1, 'days'),
-    createdAt: moment().subtract(2, 'days'),
-  },
-  {
-    id: '2',
-    name: 'Faire les courses',
-    description: 'Acheter des fruits, légumes et produits d\'épicerie',
-    completed: true,
-    status: 'completed',
-    priority: 'medium',
-    category: 'shopping',
-    deadline: moment().subtract(1, 'days'),
-    createdAt: moment().subtract(3, 'days'),
-  },
-  {
-    id: '3',
-    name: 'Faire du sport',
-    description: '30 minutes de course à pied',
-    completed: false,
-    status: 'in_progress',
-    priority: 'low',
-    category: 'health',
-    deadline: moment().add(2, 'days'),
-    createdAt: moment().subtract(1, 'days'),
-  },
-];
-
 const AppContext = ({ children }) => {
   const [tasks, setTasks] = useState(() => {
     const savedTasks = localStorage.getItem('tasks');
@@ -73,10 +37,10 @@ const AppContext = ({ children }) => {
         }));
       } catch (error) {
         console.error('Error parsing tasks from localStorage', error);
-        return initialTasks;
+        return [];
       }
     }
-    return initialTasks;
+    return [];
   });
 
   const [settings, setSettings] = useState(() => {
@@ -92,6 +56,7 @@ const AppContext = ({ children }) => {
     return initialSettings;
   });
 
+  // Save tasks to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('tasks', JSON.stringify(tasks.map(task => ({
       ...task,
@@ -111,12 +76,14 @@ const AppContext = ({ children }) => {
       completed: task.status === 'completed',
       status: task.status || 'not_started',
       createdAt: moment(),
+      duration: task.duration || 25, // Default to one pomodoro
     };
-    setTasks([...tasks, newTask]);
+    setTasks(prevTasks => [...prevTasks, newTask]);
+    return newTask;
   };
 
   const toggleTask = (taskId) => {
-    setTasks(tasks.map(task =>
+    setTasks(prevTasks => prevTasks.map(task =>
       task.id === taskId
         ? { ...task, completed: !task.completed }
         : task
@@ -124,7 +91,7 @@ const AppContext = ({ children }) => {
   };
 
   const updateTaskStatus = (taskId, newStatus) => {
-    setTasks(tasks.map(task =>
+    setTasks(prevTasks => prevTasks.map(task =>
       task.id === taskId
         ? { ...task, status: newStatus }
         : task
@@ -132,23 +99,24 @@ const AppContext = ({ children }) => {
   };
 
   const editTask = (taskId, updatedTask) => {
-    setTasks(tasks.map(task =>
+    setTasks(prevTasks => prevTasks.map(task =>
       task.id === taskId
         ? { 
             ...task, 
             ...updatedTask,
-            completed: updatedTask.status === 'completed'
+            completed: updatedTask.status === 'completed',
+            duration: updatedTask.duration || task.duration || 25,
           }
         : task
     ));
   };
 
   const deleteTask = (taskId) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
+    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
   };
 
   const updateSettings = (newSettings) => {
-    setSettings({ ...settings, ...newSettings });
+    setSettings(prev => ({ ...prev, ...newSettings }));
   };
 
   const toggleDarkMode = () => {
@@ -159,7 +127,7 @@ const AppContext = ({ children }) => {
   };
 
   const resetApp = () => {
-    setTasks(initialTasks);
+    setTasks([]);
     setSettings(initialSettings);
     localStorage.removeItem('tasks');
     localStorage.removeItem('settings');

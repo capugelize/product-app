@@ -1,0 +1,11 @@
+.categories-page {
+  padding: 24px;
+}
+
+.categories-page .ant-card {
+  margin-bottom: 24px;
+}
+
+.categories-page .ant-typography {
+  margin-bottom: 24px;
+} 
