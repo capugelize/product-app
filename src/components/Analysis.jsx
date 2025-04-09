@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Table, Typography, Space, Progress, Tag, Tabs, List } from 'antd';
+import { Card, Table, Typography, Space, Progress, Tag, Tabs, List, Empty, Alert } from 'antd';
 import { useAppContext } from '../context/AppContext';
 import { usePomodoro } from '../context/PomodoroContext';
 import moment from 'moment';
@@ -52,7 +52,7 @@ const Analysis = () => {
       key: 'timeSpent',
       render: (timeSpent) => (
         <Space direction="vertical">
-          <Text strong>Total: {timeSpent.total} minutes</Text>
+          <Text strong>Total: {timeSpent.total || 0} minutes</Text>
           {Object.entries(timeSpent)
             .filter(([key]) => key.startsWith('step'))
             .map(([step, minutes]) => (
@@ -83,15 +83,15 @@ const Analysis = () => {
       ),
     },
     {
-      title: 'Deadline',
-      dataIndex: 'deadline',
-      key: 'deadline',
-      render: (deadline) => (
-        deadline ? (
-          <Text type={moment(deadline).isBefore(moment()) ? 'danger' : 'secondary'}>
-            {moment(deadline).format('YYYY-MM-DD HH:mm')}
-          </Text>
-        ) : '-'
+      title: 'Productivity',
+      dataIndex: 'productivity',
+      key: 'productivity',
+      render: (productivity) => (
+        <Progress
+          percent={productivity.average || 0}
+          size="small"
+          status={productivity.average >= 70 ? 'success' : productivity.average >= 40 ? 'normal' : 'exception'}
+        />
       ),
     },
   ];
@@ -102,9 +102,9 @@ const Analysis = () => {
     priority: task.priority,
     category: task.category,
     status: task.status,
-    deadline: task.deadline,
     timeSpent: taskTimeSpent[task.id] || {},
     progress: taskProgress[task.id] || {},
+    productivity: taskProductivity[task.id] || { average: 0 },
   }));
 
   const formatTime = (minutes) => {
@@ -133,52 +133,62 @@ const Analysis = () => {
     }));
   };
 
+  const hasData = Object.keys(taskTimeSpent).length > 0;
+
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
-      <Card>
-        <Title level={3}>Overall Productivity</Title>
-        <Progress
-          percent={getTotalProductivity()}
-          size="large"
-          status={getTotalProductivity() >= 70 ? 'success' : getTotalProductivity() >= 40 ? 'normal' : 'exception'}
+      {!hasData && (
+        <Alert
+          message="No Analysis Data Available"
+          description="Start using the Pomodoro timer with your tasks to generate analysis data."
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
         />
-        <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-          Based on {Object.keys(taskProductivity).length} completed tasks
-        </Text>
-      </Card>
+      )}
 
-      <Tabs defaultActiveKey="1">
-        <TabPane tab="Tasks Overview" key="1">
-          <List
-            dataSource={getTaskList()}
-            renderItem={({ taskId, timeSpent, productivity }) => (
-              <List.Item
-                onClick={() => setActiveTaskId(taskId)}
-                style={{ cursor: 'pointer' }}
-              >
-                <Card style={{ width: '100%' }}>
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <Text strong>Task ID: {taskId}</Text>
-                    <Text>Total Time: {formatTime(timeSpent.total || 0)}</Text>
-                    <Progress
-                      percent={productivity.average || 0}
-                      size="small"
-                      status={productivity.average >= 70 ? 'success' : productivity.average >= 40 ? 'normal' : 'exception'}
-                    />
-                  </Space>
-                </Card>
-              </List.Item>
-            )}
-          />
-        </TabPane>
-        <TabPane tab="Detailed Analysis" key="2">
-          {activeTaskId ? (
-            <ProductivityStats taskId={activeTaskId} />
-          ) : (
-            <Text>Select a task from the overview to see detailed statistics</Text>
-          )}
-        </TabPane>
-      </Tabs>
+      {hasData && (
+        <>
+          <Card>
+            <Title level={3}>Overall Productivity</Title>
+            <Progress
+              percent={getTotalProductivity()}
+              size="large"
+              status={getTotalProductivity() >= 70 ? 'success' : getTotalProductivity() >= 40 ? 'normal' : 'exception'}
+            />
+            <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+              Based on {Object.keys(taskProductivity).length} completed tasks
+            </Text>
+          </Card>
+
+          <Tabs defaultActiveKey="1">
+            <TabPane tab="Tasks Overview" key="1">
+              <Table
+                columns={columns}
+                dataSource={data}
+                onRow={(record) => ({
+                  onClick: () => setActiveTaskId(record.key),
+                  style: { cursor: 'pointer' }
+                })}
+                rowClassName={(record) => record.key === activeTaskId ? 'selected-row' : ''}
+              />
+            </TabPane>
+            <TabPane tab="Detailed Analysis" key="2">
+              {activeTaskId ? (
+                <ProductivityStats taskId={activeTaskId} />
+              ) : (
+                <Empty
+                  description={
+                    <Text>
+                      Select a task from the overview to see detailed statistics
+                    </Text>
+                  }
+                />
+              )}
+            </TabPane>
+          </Tabs>
+        </>
+      )}
     </Space>
   );
 };

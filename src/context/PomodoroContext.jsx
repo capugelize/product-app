@@ -96,37 +96,35 @@ export const PomodoroProvider = ({ children }) => {
         }
       }));
 
-      // Update progress if provided
-      if (progress) {
-        setTaskProgress(prev => ({
-          ...prev,
-          [taskId]: {
-            ...prev[taskId],
-            [`step${currentStep}`]: progress
-          }
-        }));
+      // Update progress if provided, otherwise use a default value
+      const progressValue = progress || 50; // Default to 50% if no progress provided
+      setTaskProgress(prev => ({
+        ...prev,
+        [taskId]: {
+          ...prev[taskId],
+          [`step${currentStep}`]: progressValue
+        }
+      }));
 
-        // Calculate productivity score (0-100) based on time spent and progress
-        const productivityScore = calculateProductivityScore(timeSpent, progress);
-        setTaskProductivity(prev => ({
-          ...prev,
-          [taskId]: {
-            ...prev[taskId],
-            [`step${currentStep}`]: productivityScore,
-            average: calculateAverageProductivity(prev[taskId], productivityScore)
-          }
-        }));
-      }
+      // Calculate productivity score (0-100) based on time spent and progress
+      const productivityScore = calculateProductivityScore(timeSpent, progressValue);
+      setTaskProductivity(prev => ({
+        ...prev,
+        [taskId]: {
+          ...prev[taskId],
+          [`step${currentStep}`]: productivityScore,
+          average: calculateAverageProductivity(prev[taskId], productivityScore)
+        }
+      }));
     }
     resetPomodoro();
   };
 
   const calculateProductivityScore = (timeSpent, progress) => {
     // Simple productivity calculation based on time spent and progress
-    // You can adjust this formula based on your needs
     const baseScore = 100;
     const timeFactor = Math.min(1, 25 / timeSpent); // 25 minutes is ideal
-    const progressFactor = progress.length > 50 ? 1 : progress.length / 50;
+    const progressFactor = progress / 100; // Convert progress to 0-1 scale
     return Math.round(baseScore * timeFactor * progressFactor);
   };
 
@@ -160,6 +158,18 @@ export const PomodoroProvider = ({ children }) => {
           ...prev[taskId],
           [`step${currentStep}`]: (prev[taskId]?.[`step${currentStep}`] || 0) + timeSpent,
           total: (prev[taskId]?.total || 0) + timeSpent
+        }
+      }));
+
+      // Calculate productivity for completed Pomodoro
+      const progressValue = 100; // Assume 100% progress for completed Pomodoro
+      const productivityScore = calculateProductivityScore(timeSpent, progressValue);
+      setTaskProductivity(prev => ({
+        ...prev,
+        [taskId]: {
+          ...prev[taskId],
+          [`step${currentStep}`]: productivityScore,
+          average: calculateAverageProductivity(prev[taskId], productivityScore)
         }
       }));
     }
