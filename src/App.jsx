@@ -24,7 +24,30 @@ const App = () => {
       key: 'analysis',
       label: 'Analysis',
     },
+    {
+      key: 'pomodoro',
+      label: 'Pomodoro',
+    },
+    {
+      key: 'categories',
+      label: 'Categories',
+    },
   ];
+
+  const renderContent = () => {
+    switch (currentTab) {
+      case 'tasks':
+        return <TaskList />;
+      case 'analysis':
+        return <Analysis />;
+      case 'pomodoro':
+        return <PomodoroTimer fullWidth={true} />;
+      case 'categories':
+        return <div>Categories Management</div>;
+      default:
+        return <TaskList />;
+    }
+  };
 
   return (
     <AppContext>
@@ -50,18 +73,7 @@ const App = () => {
                 borderRadius: '8px',
               }}
             >
-              {currentTab === 'tasks' ? (
-                <div style={{ display: 'flex', gap: '24px' }}>
-                  <div style={{ flex: 1 }}>
-                    <TaskList />
-                  </div>
-                  <div style={{ width: '300px' }}>
-                    <PomodoroTimer />
-                  </div>
-                </div>
-              ) : (
-                <Analysis />
-              )}
+              {renderContent()}
             </div>
           </Content>
         </Layout>

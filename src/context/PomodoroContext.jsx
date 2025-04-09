@@ -11,6 +11,7 @@ export const PomodoroProvider = ({ children }) => {
   const [taskTimeSpent, setTaskTimeSpent] = useState({});
   const [taskProgress, setTaskProgress] = useState({});
   const [currentStep, setCurrentStep] = useState(1);
+  const [timerInterval, setTimerInterval] = useState(null);
 
   // Load saved data from localStorage
   useEffect(() => {
@@ -32,15 +33,28 @@ export const PomodoroProvider = ({ children }) => {
 
   // Timer effect
   useEffect(() => {
-    let timer;
     if (isRunning && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
+      const interval = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            handlePomodoroComplete();
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
-    } else if (timeLeft === 0 && isRunning) {
-      handlePomodoroComplete();
+      setTimerInterval(interval);
+    } else if (!isRunning && timerInterval) {
+      clearInterval(timerInterval);
+      setTimerInterval(null);
     }
-    return () => clearInterval(timer);
+
+    return () => {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+    };
   }, [isRunning, timeLeft]);
 
   const startPomodoro = (task) => {
@@ -87,10 +101,18 @@ export const PomodoroProvider = ({ children }) => {
         }));
       }
     }
+    resetPomodoro();
+  };
+
+  const resetPomodoro = () => {
     setActiveTask(null);
     setTimeLeft(25 * 60);
     setIsRunning(false);
     setSessionStartTime(null);
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      setTimerInterval(null);
+    }
   };
 
   const handlePomodoroComplete = () => {
@@ -107,10 +129,7 @@ export const PomodoroProvider = ({ children }) => {
         }
       }));
     }
-    setActiveTask(null);
-    setTimeLeft(25 * 60);
-    setIsRunning(false);
-    setSessionStartTime(null);
+    resetPomodoro();
   };
 
   const formatTime = (seconds) => {
