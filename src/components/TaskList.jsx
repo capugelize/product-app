@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message, Collapse, Tag, Typography } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined, ClockCircleOutlined, RobotOutlined } from '@ant-design/icons';
+import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message, Collapse, Tag, Typography, Segmented } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined, ClockCircleOutlined, RobotOutlined, UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { usePomodoro } from '../context/PomodoroContext';
+import NewTaskModal from './NewTaskModal';
+import TaskCard from './TaskCard';
+import KanbanView from './KanbanView';
 import './TaskItem.css';
 
 const { Option } = Select;
@@ -14,11 +17,12 @@ const { Text } = Typography;
 const TaskList = () => {
   const { tasks, addTask, editTask, deleteTask, updateTaskStatus } = useAppContext();
   const { activeTask, startPomodoro, stopPomodoro, isRunning, getTaskTimeSpent, getTaskProgress, timeLeft, taskProductivity } = usePomodoro();
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isNewTaskModalVisible, setIsNewTaskModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
   const [aiSortedTasks, setAiSortedTasks] = useState([]);
   const [useSortedTasks, setUseSortedTasks] = useState(false);
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'kanban'
 
   const CATEGORIES = [
     { value: 'work', label: '💼 Work', emoji: '💼' },
@@ -132,44 +136,31 @@ const TaskList = () => {
 
   const showModal = (task = null) => {
     setEditingTask(task);
-    if (task) {
-      form.setFieldsValue({
-        name: task.name,
-        priority: task.priority,
-        category: task.category,
-        status: task.status,
-        deadline: task.deadline ? moment(task.deadline) : null,
-      });
-    } else {
-      form.resetFields();
-    }
-    setIsModalVisible(true);
+    setIsNewTaskModalVisible(true);
   };
 
-  const handleOk = () => {
-    form.validateFields().then(values => {
-      const taskData = {
-        ...values,
-        deadline: values.deadline ? values.deadline.format() : null,
-        status: values.status || 'not_started',
-      };
+  const handleOk = (values) => {
+    const taskData = {
+      ...values,
+      deadline: values.deadline ? values.deadline.format() : null,
+      status: values.status || 'not_started',
+    };
 
-      if (editingTask) {
-        editTask(editingTask.id, taskData);
-        message.success('Task updated successfully');
-      } else {
-        addTask(taskData);
-        message.success('Task added successfully');
-      }
+    if (editingTask) {
+      editTask(editingTask.id, taskData);
+      message.success('Tâche mise à jour avec succès');
+    } else {
+      addTask(taskData);
+      message.success('Tâche ajoutée avec succès');
+    }
 
-      setIsModalVisible(false);
-      form.resetFields();
-    });
+    setIsNewTaskModalVisible(false);
+    setEditingTask(null);
   };
 
   const handleDelete = (taskId) => {
     deleteTask(taskId);
-    message.success('Task deleted successfully');
+    message.success('Tâche supprimée avec succès');
   };
 
   const handleStartPomodoro = (task) => {
@@ -198,27 +189,34 @@ const TaskList = () => {
               .map(([step, minutes]) => (
                 <div key={step}>
                   <strong>{step}:</strong> {minutes} minutes
-                  {progress[step] && (
-                    <div style={{ marginLeft: 16, marginTop: 8 }}>
-                      <strong>Progress:</strong> {progress[step]}
-                    </div>
-                  )}
                 </div>
               ))}
+            
+            {Object.entries(progress).length > 0 && (
+              <div>
+                <strong>Progress:</strong>
+                {Object.entries(progress).map(([pomodoro, value]) => (
+                  <Tag key={pomodoro} color={value > 70 ? 'green' : value > 40 ? 'blue' : 'orange'}>
+                    {pomodoro}: {value}%
+                  </Tag>
+                ))}
+              </div>
+            )}
           </Space>
         </Panel>
       </Collapse>
     );
   };
 
+  // Fonctions utilitaires
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed':
-        return 'success';
-      case 'in_progress':
-        return 'processing';
       case 'not_started':
         return 'default';
+      case 'in_progress':
+        return 'processing';
+      case 'completed':
+        return 'success';
       default:
         return 'default';
     }
@@ -233,7 +231,7 @@ const TaskList = () => {
       case 'low':
         return 'green';
       default:
-        return 'default';
+        return 'blue';
     }
   };
 
@@ -246,184 +244,99 @@ const TaskList = () => {
   };
 
   const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  // Rendu de la liste des tâches ou de la vue Kanban en fonction du mode sélectionné
+  const renderTasksView = () => {
+    if (viewMode === 'kanban') {
+      return (
+        <KanbanView 
+          tasks={tasks}
+          aiSortedTasks={aiSortedTasks}
+          useSortedTasks={useSortedTasks}
+          onEdit={(editTask) => showModal(editTask)}
+          onDelete={handleDelete}
+        />
+      );
+    }
+
+    // Vue liste par défaut
+    return (
+      <AnimatePresence>
+        {(useSortedTasks ? aiSortedTasks : tasks).map(task => (
+          <TaskCard
+            key={task.id}
+            task={task} 
+            onEdit={(editTask) => showModal(editTask)}
+            onDelete={handleDelete}
+            onStatusChange={(newStatus) => updateTaskStatus(task.id, newStatus)}
+          />
+        ))}
+      </AnimatePresence>
+    );
   };
 
   return (
-    <Card
-      title="Tasks"
-      extra={
-        <Space>
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h2 className="text-2xl font-semibold">Mes Tâches</h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Gérez vos tâches et projets
+          </p>
+        </div>
+        <div className="flex gap-4 items-center">
+          <Segmented
+            options={[
+              {
+                value: 'list',
+                icon: <UnorderedListOutlined />,
+                label: 'Liste',
+              },
+              {
+                value: 'kanban',
+                icon: <AppstoreOutlined />,
+                label: 'Kanban',
+              },
+            ]}
+            value={viewMode}
+            onChange={setViewMode}
+          />
           <Button 
+            icon={<RobotOutlined />} 
+            onClick={toggleSortMode} 
             type={useSortedTasks ? "primary" : "default"}
-            icon={<RobotOutlined />}
-            onClick={toggleSortMode}
+            disabled={viewMode === 'kanban'}
           >
-            {useSortedTasks ? "Using AI Sort" : "Use AI Sort"}
+            {useSortedTasks ? "Tri AI activé" : "Tri standard"}
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
-            Add Task
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />} 
+            onClick={() => showModal(null)}
+          >
+            Nouvelle tâche
           </Button>
-        </Space>
-      }
-    >
-      {isRunning && activeTask && (
-        <div className="timer-display active">
-          <ClockCircleOutlined className="timer-icon" />
-          <span className="timer-text">{formatTime(timeLeft)}</span>
-          <span className="task-name">{activeTask.name}</span>
         </div>
-      )}
-      
-      {useSortedTasks && (
-        <div style={{ marginBottom: 16, backgroundColor: '#f6ffed', padding: 12, borderRadius: 4, border: '1px solid #b7eb8f' }}>
-          <Text strong>AI-powered task ordering enabled. </Text>
-          <Text>Tasks are sorted based on priority, deadlines, progress, and productivity patterns.</Text>
-        </div>
-      )}
-      
-      <AnimatePresence>
-        <List
-          dataSource={useSortedTasks ? aiSortedTasks : tasks}
-          renderItem={task => (
-            <motion.div
-              key={task.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2 }}
-              className={`task-item ${activeTask?.id === task.id ? 'active-pomodoro' : ''}`}
-            >
-              <List.Item
-                actions={[
-                  <Button
-                    type="text"
-                    icon={<PlayCircleOutlined />}
-                    onClick={() => handleStartPomodoro(task)}
-                    className={activeTask?.id === task.id && isRunning ? 'active-timer' : ''}
-                  />,
-                  <Button
-                    type="text"
-                    icon={<EditOutlined />}
-                    onClick={() => showModal(task)}
-                  />,
-                  <Button
-                    type="text"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => handleDelete(task.id)}
-                  />,
-                ]}
-              >
-                <List.Item.Meta
-                  title={
-                    <Space>
-                      {task.name}
-                      {useSortedTasks && task.aiScore && (
-                        <Tag color={task.aiScore > 70 ? 'red' : task.aiScore > 40 ? 'orange' : 'green'}>
-                          AI Score: {task.aiScore}
-                        </Tag>
-                      )}
-                    </Space>
-                  }
-                  description={
-                    <Space direction="vertical" size="small">
-                      <Space>
-                        <Tag color={getPriorityColor(task.priority)}>
-                          {task.priority}
-                        </Tag>
-                        <Tag color={getStatusColor(task.status)}>
-                          {getStatusEmoji(task.status)} {STATUSES.find(s => s.value === task.status)?.label.split(' ')[1] || 'Unknown'}
-                        </Tag>
-                        <Tag>
-                          {getCategoryEmoji(task.category)} {CATEGORIES.find(c => c.value === task.category)?.label.split(' ')[1] || 'Other'}
-                        </Tag>
-                      </Space>
-                      {task.deadline && (
-                        <div>Deadline: {moment(task.deadline).format('YYYY-MM-DD HH:mm')}</div>
-                      )}
-                      {renderTaskProgress(task)}
-                    </Space>
-                  }
-                />
-              </List.Item>
-            </motion.div>
-          )}
-        />
-      </AnimatePresence>
+      </div>
 
-      <Modal
-        title={editingTask ? "Edit Task" : "Add Task"}
-        open={isModalVisible}
-        onOk={handleOk}
+      {/* Liste des tâches ou vue Kanban selon le mode sélectionné */}
+      {renderTasksView()}
+
+      {/* Utiliser le nouveau composant NewTaskModal avec support des sous-tâches */}
+      <NewTaskModal
+        visible={isNewTaskModalVisible}
         onCancel={() => {
-          setIsModalVisible(false);
-          form.resetFields();
+          setIsNewTaskModalVisible(false);
+          setEditingTask(null);
         }}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-        >
-          <Form.Item
-            name="name"
-            label="Task Name"
-            rules={[{ required: true, message: 'Please enter task name' }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item
-            name="priority"
-            label="Priority"
-            initialValue="medium"
-          >
-            <Select>
-              <Option value="high">High</Option>
-              <Option value="medium">Medium</Option>
-              <Option value="low">Low</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="category"
-            label="Category"
-            initialValue="work"
-          >
-            <Select>
-              {CATEGORIES.map(category => (
-                <Option key={category.value} value={category.value}>
-                  {category.label}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="status"
-            label="Status"
-            initialValue="not_started"
-          >
-            <Select>
-              {STATUSES.map(status => (
-                <Option key={status.value} value={status.value}>
-                  {status.label}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="deadline"
-            label="Deadline"
-          >
-            <DatePicker showTime />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </Card>
+        onOk={handleOk}
+        initialValues={editingTask}
+      />
+    </div>
   );
 };
 

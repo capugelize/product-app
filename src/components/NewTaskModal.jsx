@@ -1,17 +1,50 @@
-import { Modal, Form, Input, Select, DatePicker, ColorPicker, Switch } from 'antd';
+import { Modal, Form, Input, Select, DatePicker, ColorPicker, Switch, Button, Space } from 'antd';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useAppContext } from '../context/AppContext';
+import { useState } from 'react';
 
 const { Option } = Select;
 
-const NewTaskModal = ({ visible, onCancel, onOk }) => {
+const NewTaskModal = ({ visible, onCancel, onOk, initialValues }) => {
   const [form] = Form.useForm();
   const { settings } = useAppContext();
+  const [subtasks, setSubtasks] = useState(initialValues?.subtasks || []);
 
   const handleSubmit = () => {
     form.validateFields().then(values => {
-      onOk(values);
+      // Inclure les sous-tâches dans les valeurs soumises
+      const taskWithSubtasks = {
+        ...values,
+        subtasks: subtasks,
+      };
+      onOk(taskWithSubtasks);
       form.resetFields();
+      setSubtasks([]);
     });
+  };
+
+  const addSubtask = () => {
+    const newSubtask = {
+      id: Date.now().toString(),
+      name: '',
+      completed: false,
+    };
+    setSubtasks([...subtasks, newSubtask]);
+  };
+
+  const updateSubtask = (index, value) => {
+    const updatedSubtasks = [...subtasks];
+    updatedSubtasks[index] = {
+      ...updatedSubtasks[index],
+      name: value,
+    };
+    setSubtasks(updatedSubtasks);
+  };
+
+  const removeSubtask = (index) => {
+    const updatedSubtasks = [...subtasks];
+    updatedSubtasks.splice(index, 1);
+    setSubtasks(updatedSubtasks);
   };
 
   return (
@@ -20,6 +53,7 @@ const NewTaskModal = ({ visible, onCancel, onOk }) => {
       open={visible}
       onCancel={() => {
         form.resetFields();
+        setSubtasks([]);
         onCancel();
       }}
       onOk={handleSubmit}
@@ -32,7 +66,8 @@ const NewTaskModal = ({ visible, onCancel, onOk }) => {
         className="dark:text-gray-100"
         initialValues={{
           notificationTime: "30",
-          recurring: false
+          recurring: false,
+          ...initialValues
         }}
       >
         <Form.Item
@@ -145,6 +180,37 @@ const NewTaskModal = ({ visible, onCancel, onOk }) => {
             </Select>
           </Form.Item>
         )}
+
+        <div className="border-t pt-4 mt-4">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-medium">Sous-tâches</h3>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={addSubtask}
+            >
+              Ajouter une sous-tâche
+            </Button>
+          </div>
+
+          {subtasks.map((subtask, index) => (
+            <div key={subtask.id} className="flex items-center mb-2">
+              <Input
+                className="flex-grow"
+                placeholder="Nom de la sous-tâche"
+                value={subtask.name}
+                onChange={(e) => updateSubtask(index, e.target.value)}
+              />
+              <Button 
+                type="text" 
+                danger
+                icon={<DeleteOutlined />} 
+                onClick={() => removeSubtask(index)}
+                className="ml-2"
+              />
+            </div>
+          ))}
+        </div>
       </Form>
     </Modal>
   );

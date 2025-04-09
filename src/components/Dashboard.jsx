@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Typography, Space, Progress, Tag, Button, Modal, Form, Input, DatePicker, Select, Table, Popconfirm } from 'antd';
+import { Card, Row, Col, Typography, Space, Progress, Tag, Button, Modal, Form, Input, DatePicker, Select, Table, Popconfirm, Checkbox, message } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, RobotOutlined } from '@ant-design/icons';
 import { useAppContext } from '../context/AppContext';
 import { usePomodoro } from '../context/PomodoroContext';
+import NewTaskModal from './NewTaskModal';
 import moment from 'moment';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 const Dashboard = () => {
-  const { tasks, addTask, updateTask, deleteTask } = useAppContext();
+  const { tasks, addTask, editTask, deleteTask, toggleTask, toggleSubtask } = useAppContext();
   const { taskTimeSpent, taskProgress, taskProductivity } = usePomodoro();
   
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -198,19 +199,18 @@ const Dashboard = () => {
   };
 
   const handleSave = (values) => {
-    const formattedTask = {
+    const taskData = {
       ...values,
       deadline: values.deadline ? values.deadline.format() : null,
+      status: values.status || 'not_started',
     };
 
     if (editingTask) {
-      updateTask({ ...editingTask, ...formattedTask });
+      editTask(editingTask.id, taskData);
+      message.success('Tâche mise à jour avec succès');
     } else {
-      addTask({
-        ...formattedTask,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-      });
+      addTask(taskData);
+      message.success('Tâche ajoutée avec succès');
     }
 
     setIsModalVisible(false);
@@ -225,149 +225,256 @@ const Dashboard = () => {
     setUseSortedTasks(!useSortedTasks);
   };
 
-  // Ajout d'une colonne pour le score AI
-  const columns = [
-    {
-      title: 'Task',
-      dataIndex: 'name',
-      key: 'name',
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={
-          status === 'completed' ? 'success' :
-          status === 'in_progress' ? 'processing' : 'default'
-        }>
-          {status.replace('_', ' ')}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Priority',
-      dataIndex: 'priority',
-      key: 'priority',
-      render: (priority) => (
-        <Tag color={
-          priority === 'high' ? 'red' :
-          priority === 'medium' ? 'orange' : 'green'
-        }>
-          {priority}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Category',
-      dataIndex: 'category',
-      key: 'category',
-      render: (category) => {
-        const icon = getCategoryIcon(category);
-        return <Tag>{icon} {category}</Tag>;
+  const handleToggleTask = (taskId) => {
+    toggleTask(taskId);
+  };
+
+  const handleToggleSubtask = (taskId, subtaskId) => {
+    toggleSubtask(taskId, subtaskId);
+  };
+
+  // Calculer le nombre total de sous-tâches et de sous-tâches complétées
+  const getSubtaskStats = () => {
+    let total = 0;
+    let completed = 0;
+
+    tasks.forEach(task => {
+      if (task.subtasks && task.subtasks.length > 0) {
+        total += task.subtasks.length;
+        completed += task.subtasks.filter(st => st.completed).length;
+      }
+    });
+
+    return {
+      total,
+      completed,
+      completionRate: total > 0 ? Math.round((completed / total) * 100) : 0
+    };
+  };
+
+  const renderTasksTable = () => {
+    const data = (useSortedTasks ? aiSortedTasks : tasks).map(task => ({
+      key: task.id,
+      name: task.name,
+      priority: task.priority,
+      category: task.category,
+      status: task.status,
+      deadline: task.deadline,
+      aiScore: task.aiScore,
+      subtasks: task.subtasks || [],
+      completed: task.completed
+    }));
+
+    const columns = [
+      {
+        title: 'Status',
+        key: 'completed',
+        width: 60,
+        render: (_, record) => (
+          <Checkbox
+            checked={record.completed}
+            onChange={() => handleToggleTask(record.key)}
+          />
+        ),
       },
-    },
-    {
-      title: 'Deadline',
-      dataIndex: 'deadline',
-      key: 'deadline',
-      render: (deadline) => deadline ? moment(deadline).format('YYYY-MM-DD') : '-',
-    },
-    {
-      title: 'Progress',
-      key: 'progress',
-      render: (_, record) => (
-        taskProgress[record.id] ? (
-          <Progress
-            percent={Math.round(Object.values(taskProgress[record.id]).reduce((a, b) => a + b, 0) / Object.keys(taskProgress[record.id]).length)}
-            size="small"
-          />
-        ) : <Progress percent={0} size="small" />
-      ),
-    },
-    ...(useSortedTasks ? [{
-      title: 'AI Score',
-      dataIndex: 'aiScore',
-      key: 'aiScore',
-      render: (score) => (
-        <Tag color={score > 70 ? 'red' : score > 40 ? 'orange' : 'green'}>
-          {score}
-        </Tag>
-      ),
-    }] : []),
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space size="small">
-          <Button 
-            type="text" 
-            icon={<EditOutlined />} 
-            onClick={() => showModal(record)} 
-          />
-          <Popconfirm
-            title="Are you sure you want to delete this task?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
+      {
+        title: 'Task',
+        dataIndex: 'name',
+        key: 'name',
+        render: (text, record) => (
+          <div>
+            <div className={`font-medium ${record.completed ? 'line-through text-gray-400' : ''}`}>{text}</div>
+            
+            {/* Affichage des sous-tâches */}
+            {record.subtasks && record.subtasks.length > 0 && (
+              <div className="ml-4 mt-2 border-l-2 border-gray-200 pl-2">
+                {record.subtasks.map(subtask => (
+                  <div key={subtask.id} className="flex items-center py-1">
+                    <Checkbox
+                      checked={subtask.completed}
+                      onChange={() => handleToggleSubtask(record.key, subtask.id)}
+                      className="mr-2"
+                    />
+                    <span className={`text-sm ${subtask.completed ? 'line-through text-gray-400' : ''}`}>
+                      {subtask.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ),
+      },
+      {
+        title: 'Priority',
+        dataIndex: 'priority',
+        key: 'priority',
+        render: (priority) => (
+          <Tag color={
+            priority === 'high' ? 'red' :
+            priority === 'medium' ? 'orange' : 'green'
+          }>
+            {priority}
+          </Tag>
+        ),
+      },
+      {
+        title: 'Category',
+        dataIndex: 'category',
+        key: 'category',
+        render: (category) => {
+          const icon = getCategoryIcon(category);
+          return <Tag>{icon} {category}</Tag>;
+        },
+      },
+      {
+        title: 'Deadline',
+        dataIndex: 'deadline',
+        key: 'deadline',
+        render: (deadline) => deadline ? moment(deadline).format('YYYY-MM-DD') : '-',
+      },
+      {
+        title: 'Progress',
+        key: 'progress',
+        render: (_, record) => (
+          taskProgress[record.key] ? (
+            <Progress
+              percent={Math.round(Object.values(taskProgress[record.key]).reduce((a, b) => a + b, 0) / Object.keys(taskProgress[record.key]).length)}
+              size="small"
+            />
+          ) : <Progress percent={0} size="small" />
+        ),
+      },
+      ...(useSortedTasks ? [{
+        title: 'AI Score',
+        dataIndex: 'aiScore',
+        key: 'aiScore',
+        render: (score) => (
+          <Tag color={score > 70 ? 'red' : score > 40 ? 'orange' : 'green'}>
+            {score}
+          </Tag>
+        ),
+      }] : []),
+      {
+        title: 'Actions',
+        key: 'actions',
+        render: (_, record) => (
+          <Space size="small">
             <Button 
               type="text" 
-              danger 
-              icon={<DeleteOutlined />} 
+              icon={<EditOutlined />} 
+              onClick={() => showModal(record)} 
             />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+            <Popconfirm
+              title="Are you sure you want to delete this task?"
+              onConfirm={() => handleDelete(record.key)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button 
+                type="text" 
+                danger 
+                icon={<DeleteOutlined />} 
+              />
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ];
+
+    return (
+      <Table
+        dataSource={data}
+        columns={columns}
+        pagination={{ pageSize: 10 }}
+        expandable={{
+          expandedRowRender: record => (
+            <div className="pl-4">
+              {record.description && (
+                <p>{record.description}</p>
+              )}
+              <Space direction="vertical" style={{ width: '100%' }}>
+                {taskTimeSpent[record.key] && (
+                  <div>
+                    <Text type="secondary">Time spent: {taskTimeSpent[record.key].total} minutes</Text>
+                  </div>
+                )}
+                {taskProgress[record.key] && (
+                  <div>
+                    <Text type="secondary">Average progress: {
+                      Math.round(
+                        Object.values(taskProgress[record.key]).reduce((sum, val) => sum + val, 0) / 
+                        Object.keys(taskProgress[record.key]).length
+                      )}%
+                    </Text>
+                  </div>
+                )}
+              </Space>
+            </div>
+          ),
+        }}
+      />
+    );
+  };
 
   const taskStats = getTaskStats();
   const timeStats = getTimeStats();
   const priorityStats = getPriorityStats();
   const recentTasks = getRecentTasks();
+  const subtaskStats = getSubtaskStats();
 
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <Title level={2}>Dashboard Overview</Title>
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />}
-          onClick={() => showModal()}
-        >
-          Add Task
-        </Button>
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-4">
+        <Title level={2}>Dashboard</Title>
+        <Space>
+          <Button 
+            icon={<RobotOutlined />}
+            onClick={toggleSortMode}
+            type={useSortedTasks ? "primary" : "default"}
+          >
+            {useSortedTasks ? "Tri AI activé" : "Tri standard"}
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => showModal()}
+          >
+            Ajouter une tâche
+          </Button>
+        </Space>
       </div>
-      
-      <Row gutter={[16, 16]}>
-        {/* Task Statistics */}
-        <Col span={8}>
-          <Card title="Task Statistics">
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <div>
-                <Text strong>Total Tasks: </Text>
-                <Text>{taskStats.total}</Text>
-              </div>
-              <div>
-                <Text strong>Completion Rate: </Text>
-                <Progress percent={taskStats.completionRate} size="small" />
-              </div>
-              <div>
-                <Text strong>Status Distribution: </Text>
-                <Space direction="vertical" style={{ width: '100%', marginTop: 8 }}>
-                  <div>
-                    <Tag color="success">Completed: {taskStats.completed}</Tag>
-                  </div>
-                  <div>
-                    <Tag color="processing">In Progress: {taskStats.inProgress}</Tag>
-                  </div>
-                  <div>
-                    <Tag color="default">Not Started: {taskStats.notStarted}</Tag>
-                  </div>
-                </Space>
-              </div>
-            </Space>
+
+      <Row gutter={[16, 16]} className="mb-4">
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Title level={4}>Progression globale</Title>
+            <Progress 
+              type="circle" 
+              percent={taskStats.completionRate} 
+              format={percent => `${percent}%`} 
+            />
+            <div className="mt-4">
+              <Text>Total: {taskStats.total} tâches</Text>
+              <br />
+              <Text>Terminées: {taskStats.completed}</Text>
+            </div>
+          </Card>
+        </Col>
+        
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Title level={4}>Sous-tâches</Title>
+            <Progress 
+              type="circle" 
+              percent={subtaskStats.completionRate}
+              format={percent => `${percent}%`}
+            />
+            <div className="mt-4">
+              <Text>Total: {subtaskStats.total} sous-tâches</Text>
+              <br />
+              <Text>Terminées: {subtaskStats.completed}</Text>
+            </div>
           </Card>
         </Col>
 
@@ -413,199 +520,79 @@ const Dashboard = () => {
             </Space>
           </Card>
         </Col>
-
-        {/* Task Management */}
-        <Col span={24}>
-          <Card 
-            title="Task Management" 
-            extra={
-              <Space>
-                <Button 
-                  type={useSortedTasks ? "primary" : "default"}
-                  icon={<RobotOutlined />}
-                  onClick={toggleSortMode}
-                  size="small"
-                >
-                  {useSortedTasks ? "Using AI Sort" : "Use AI Sort"}
-                </Button>
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />}
-                  onClick={() => showModal()}
-                  size="small"
-                >
-                  Add Task
-                </Button>
-              </Space>
-            }
-          >
-            {useSortedTasks && (
-              <div style={{ marginBottom: 16, backgroundColor: '#f6ffed', padding: 12, borderRadius: 4, border: '1px solid #b7eb8f' }}>
-                <Text strong>AI-powered task ordering enabled. </Text>
-                <Text>Tasks are sorted based on priority, deadlines, progress, and productivity patterns.</Text>
-              </div>
-            )}
-            <Table 
-              dataSource={useSortedTasks ? aiSortedTasks : tasks} 
-              columns={columns} 
-              rowKey="id"
-              pagination={{ pageSize: 5 }}
-            />
-          </Card>
-        </Col>
-
-        {/* Recent Tasks */}
-        <Col span={24}>
-          <Card title="Recent Tasks">
-            <Row gutter={[16, 16]}>
-              {recentTasks.map(task => (
-                <Col span={8} key={task.id}>
-                  <Card 
-                    size="small"
-                    actions={[
-                      <EditOutlined key="edit" onClick={() => showModal(task)} />,
-                      <Popconfirm
-                        title="Are you sure you want to delete this task?"
-                        onConfirm={() => handleDelete(task.id)}
-                        okText="Yes"
-                        cancelText="No"
-                      >
-                        <DeleteOutlined key="delete" />
-                      </Popconfirm>
-                    ]}
-                  >
-                    <Space direction="vertical">
-                      <Text strong>{task.name}</Text>
-                      <Space>
-                        <Tag color={
-                          task.priority === 'high' ? 'red' :
-                          task.priority === 'medium' ? 'orange' : 'green'
-                        }>
-                          {task.priority}
-                        </Tag>
-                        <Tag color={
-                          task.status === 'completed' ? 'success' :
-                          task.status === 'in_progress' ? 'processing' : 'default'
-                        }>
-                          {task.status.replace('_', ' ')}
-                        </Tag>
-                        {task.category && (
-                          <Tag>
-                            {getCategoryIcon(task.category)} {task.category}
-                          </Tag>
-                        )}
-                      </Space>
-                      {task.deadline && (
-                        <Text type="secondary">
-                          Deadline: {moment(task.deadline).format('YYYY-MM-DD')}
-                        </Text>
-                      )}
-                      {taskProgress[task.id] && (
-                        <Progress
-                          percent={Object.values(taskProgress[task.id]).reduce((a, b) => a + b, 0) / Object.keys(taskProgress[task.id]).length}
-                          size="small"
-                        />
-                      )}
-                    </Space>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          </Card>
-        </Col>
       </Row>
 
+      <Card title="Mes tâches" className="mb-4">
+        {renderTasksTable()}
+      </Card>
+
+      {/* Recent Tasks */}
+      <Col span={24}>
+        <Card title="Recent Tasks">
+          <Row gutter={[16, 16]}>
+            {recentTasks.map(task => (
+              <Col span={8} key={task.id}>
+                <Card 
+                  size="small"
+                  actions={[
+                    <EditOutlined key="edit" onClick={() => showModal(task)} />,
+                    <Popconfirm
+                      title="Are you sure you want to delete this task?"
+                      onConfirm={() => handleDelete(task.id)}
+                      okText="Yes"
+                      cancelText="No"
+                    >
+                      <DeleteOutlined key="delete" />
+                    </Popconfirm>
+                  ]}
+                >
+                  <Space direction="vertical">
+                    <Text strong>{task.name}</Text>
+                    <Space>
+                      <Tag color={
+                        task.priority === 'high' ? 'red' :
+                        task.priority === 'medium' ? 'orange' : 'green'
+                      }>
+                        {task.priority}
+                      </Tag>
+                      <Tag color={
+                        task.status === 'completed' ? 'success' :
+                        task.status === 'in_progress' ? 'processing' : 'default'
+                      }>
+                        {task.status.replace('_', ' ')}
+                      </Tag>
+                      {task.category && (
+                        <Tag>
+                          {getCategoryIcon(task.category)} {task.category}
+                        </Tag>
+                      )}
+                    </Space>
+                    {task.deadline && (
+                      <Text type="secondary">
+                        Deadline: {moment(task.deadline).format('YYYY-MM-DD')}
+                      </Text>
+                    )}
+                    {taskProgress[task.id] && (
+                      <Progress
+                        percent={Object.values(taskProgress[task.id]).reduce((a, b) => a + b, 0) / Object.keys(taskProgress[task.id]).length}
+                        size="small"
+                      />
+                    )}
+                  </Space>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Card>
+      </Col>
+
       {/* Task Form Modal */}
-      <Modal
-        title={editingTask ? "Edit Task" : "Add New Task"}
-        open={isModalVisible}
+      <NewTaskModal
+        visible={isModalVisible}
         onCancel={handleCancel}
-        footer={null}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSave}
-          initialValues={{
-            name: '',
-            description: '',
-            status: 'not_started',
-            priority: 'medium',
-            category: 'work',
-          }}
-        >
-          <Form.Item
-            name="name"
-            label="Task Name"
-            rules={[{ required: true, message: 'Please enter a task name' }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item
-            name="description"
-            label="Description"
-          >
-            <Input.TextArea rows={3} />
-          </Form.Item>
-
-          <Form.Item
-            name="status"
-            label="Status"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="not_started">Not Started</Option>
-              <Option value="in_progress">In Progress</Option>
-              <Option value="completed">Completed</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="priority"
-            label="Priority"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="low">Low</Option>
-              <Option value="medium">Medium</Option>
-              <Option value="high">High</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="category"
-            label="Category"
-            rules={[{ required: true, message: 'Please select a category' }]}
-          >
-            <Select>
-              <Option value="work">💼 Work</Option>
-              <Option value="personal">🏠 Personal</Option>
-              <Option value="study">📚 Study</Option>
-              <Option value="health">💪 Health</Option>
-              <Option value="other">📝 Other</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="deadline"
-            label="Deadline"
-          >
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <Button onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button type="primary" htmlType="submit">
-                {editingTask ? 'Save Changes' : 'Add Task'}
-              </Button>
-            </div>
-          </Form.Item>
-        </Form>
-      </Modal>
+        onOk={handleSave}
+        initialValues={editingTask}
+      />
     </div>
   );
 };

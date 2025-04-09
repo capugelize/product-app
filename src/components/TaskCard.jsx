@@ -53,13 +53,26 @@ const getStatusColor = (status) => {
 };
 
 const TaskCard = ({ task, onEdit, onDelete, onStatusChange }) => {
-  const { settings } = useAppContext();
+  const { toggleTask, toggleSubtask } = useAppContext();
 
   const handleStatusChange = (newStatus) => {
     if (onStatusChange) {
       onStatusChange(newStatus);
     }
   };
+
+  const handleToggleComplete = (e) => {
+    e.stopPropagation();
+    toggleTask(task.id);
+  };
+
+  const handleToggleSubtask = (subtaskId, e) => {
+    e.stopPropagation();
+    toggleSubtask(task.id, subtaskId);
+  };
+
+  const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+  const allSubtasksCompleted = hasSubtasks && task.subtasks.every(subtask => subtask.completed);
 
   return (
     <motion.div
@@ -81,7 +94,7 @@ const TaskCard = ({ task, onEdit, onDelete, onStatusChange }) => {
         <div className="flex items-start gap-3">
           <Checkbox
             checked={task.completed}
-            onChange={(e) => onToggleComplete(task.id, e.target.checked)}
+            onChange={handleToggleComplete}
             className="mt-1"
           />
           <div>
@@ -125,6 +138,25 @@ const TaskCard = ({ task, onEdit, onDelete, onStatusChange }) => {
           />
         </div>
       </div>
+
+      {/* Sous-tâches */}
+      {hasSubtasks && (
+        <div className="ml-8 mt-3 mb-3 border-l-2 border-gray-200 pl-3">
+          <div className="text-sm font-medium mb-1">Sous-tâches {allSubtasksCompleted && <span className="text-green-500">✓</span>}</div>
+          {task.subtasks.map(subtask => (
+            <div key={subtask.id} className="flex items-center py-1">
+              <Checkbox
+                checked={subtask.completed}
+                onChange={(e) => handleToggleSubtask(subtask.id, e)}
+                className="mr-2"
+              />
+              <span className={`text-sm ${subtask.completed ? 'line-through text-gray-400' : ''}`}>
+                {subtask.name}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2 mt-3">
         <span className={`px-3 py-1 rounded-full text-sm ${getCategoryColor(task.category)}`}>

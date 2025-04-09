@@ -9,7 +9,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 const { Title } = Typography;
 
-const SortableTaskCard = ({ task, onStatusChange }) => {
+const SortableTaskCard = ({ task, onEdit, onDelete, onStatusChange }) => {
   const {
     attributes,
     listeners,
@@ -27,35 +27,46 @@ const SortableTaskCard = ({ task, onStatusChange }) => {
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <TaskCard
         task={task}
+        onEdit={onEdit}
+        onDelete={onDelete}
         onStatusChange={onStatusChange}
       />
     </div>
   );
 };
 
-const KanbanView = () => {
-  const { tasks, updateTaskStatus } = useAppContext();
+const KanbanView = ({ 
+  tasks = [], 
+  aiSortedTasks = [], 
+  useSortedTasks = false,
+  onEdit,
+  onDelete
+}) => {
+  const { updateTaskStatus } = useAppContext();
+  
+  // Utiliser les tâches triées par l'IA si l'option est activée
+  const displayedTasks = useSortedTasks ? aiSortedTasks : tasks;
 
   const statusColumns = [
-    { id: 'not_started', title: '⏳ Not Started', color: '#faad14' },
-    { id: 'in_progress', title: '🔧 In Progress', color: '#1890ff' },
-    { id: 'completed', title: '✅ Completed', color: '#52c41a' }
+    { id: 'not_started', title: '⏳ À faire', color: '#faad14' },
+    { id: 'in_progress', title: '🔧 En cours', color: '#1890ff' },
+    { id: 'completed', title: '✅ Terminé', color: '#52c41a' }
   ];
 
   const getTasksByStatus = (status) => {
-    return tasks.filter(task => task.status === status);
+    return displayedTasks.filter(task => task.status === status);
   };
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
     
-    if (active.id !== over.id) {
-      const taskId = active.id;
-      const newStatus = over.id;
-      
-      if (statusColumns.some(column => column.id === newStatus)) {
-        updateTaskStatus(taskId, newStatus);
-      }
+    if (!over || active.id === over.id) return;
+    
+    const taskId = active.id;
+    const newStatus = over.id;
+    
+    if (statusColumns.some(column => column.id === newStatus)) {
+      updateTaskStatus(taskId, newStatus);
     }
   };
 
@@ -64,38 +75,56 @@ const KanbanView = () => {
       collisionDetection={closestCorners}
       onDragEnd={handleDragEnd}
     >
-      <div className="kanban-container" style={{ display: 'flex', gap: '16px', overflowX: 'auto', padding: '16px' }}>
+      <div className="kanban-container" style={{ display: 'flex', gap: '16px', overflowX: 'auto', padding: '16px', maxHeight: 'calc(100vh - 200px)' }}>
         {statusColumns.map(column => {
           const columnTasks = getTasksByStatus(column.id);
           return (
             <Card
               key={column.id}
+              title={
+                <div className="flex items-center">
+                  <span>{column.title}</span>
+                  <span className="ml-2 text-gray-500 text-sm">({columnTasks.length})</span>
+                </div>
+              }
               style={{
-                minWidth: '300px',
+                minWidth: '330px',
                 flex: 1,
-                backgroundColor: '#f5f5f5',
-                borderLeft: `4px solid ${column.color}`
+                backgroundColor: '#f9f9f9',
+                borderLeft: `4px solid ${column.color}`,
+                borderRadius: '6px',
+                overflow: 'hidden'
+              }}
+              bodyStyle={{ 
+                padding: '12px', 
+                maxHeight: 'calc(100vh - 280px)',
+                overflow: 'auto'
+              }}
+              headStyle={{
+                backgroundColor: '#f0f0f0',
+                borderBottom: '1px solid #e8e8e8'
               }}
             >
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Title level={4} style={{ margin: 0 }}>
-                  {column.title} ({columnTasks.length})
-                </Title>
-                <div className="task-list" style={{ minHeight: '200px' }}>
-                  <SortableContext
-                    items={columnTasks.map(task => task.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {columnTasks.map(task => (
-                      <SortableTaskCard
-                        key={task.id}
-                        task={task}
-                        onStatusChange={(newStatus) => updateTaskStatus(task.id, newStatus)}
-                      />
-                    ))}
-                  </SortableContext>
+              <SortableContext
+                items={columnTasks.map(task => task.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {columnTasks.map(task => (
+                  <SortableTaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={() => onEdit(task)}
+                    onDelete={() => onDelete(task.id)}
+                    onStatusChange={(newStatus) => updateTaskStatus(task.id, newStatus)}
+                  />
+                ))}
+              </SortableContext>
+              
+              {columnTasks.length === 0 && (
+                <div className="flex justify-center items-center p-4 text-gray-400" style={{ minHeight: '100px' }}>
+                  Aucune tâche
                 </div>
-              </Space>
+              )}
             </Card>
           );
         })}
@@ -103,7 +132,7 @@ const KanbanView = () => {
       <DragOverlay>
         {({ active }) => {
           if (active) {
-            const task = tasks.find(t => t.id === active.id);
+            const task = displayedTasks.find(t => t.id === active.id);
             return task ? <TaskCard task={task} /> : null;
           }
           return null;

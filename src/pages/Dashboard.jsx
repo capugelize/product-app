@@ -1,6 +1,5 @@
-import { Row, Col, Card, Tabs } from 'antd';
+import { Row, Col, Card } from 'antd';
 import TaskList from '../components/TaskList';
-import KanbanView from '../components/KanbanView';
 import { useAppContext } from '../context/AppContext';
 import ProductivityAssistant from '../components/ProductivityAssistant';
 import PomodoroTimer from '../components/PomodoroTimer';
@@ -20,19 +19,6 @@ const Dashboard = () => {
     acc[category] = (acc[category] || 0) + 1;
     return acc;
   }, {});
-  
-  const items = [
-    {
-      key: '1',
-      label: 'Liste',
-      children: <TaskList />,
-    },
-    {
-      key: '2',
-      label: 'Kanban',
-      children: <KanbanView />,
-    },
-  ];
   
   return (
     <div className="dashboard-page">
@@ -75,7 +61,7 @@ const Dashboard = () => {
       
       <Row gutter={[16, 16]} style={{ marginTop: '16px' }}>
         <Col span={24}>
-          <Tabs defaultActiveKey="1" items={items} />
+          <TaskList />
         </Col>
       </Row>
       
