@@ -2,56 +2,35 @@ import { useState, useEffect } from 'react';
 import { Card, Button, Typography, Space, Progress, Modal, Form, InputNumber } from 'antd';
 import { PlayCircleOutlined, PauseCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import { useAppContext } from '../context/AppContext';
+import { usePomodoro } from '../context/PomodoroContext';
 import { motion } from 'framer-motion';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const PomodoroTimer = ({ fullWidth = false }) => {
   const { settings, updateSettings } = useAppContext();
-  const [timeLeft, setTimeLeft] = useState(settings.workTime * 60);
-  const [isActive, setIsActive] = useState(false);
-  const [isWorkTime, setIsWorkTime] = useState(true);
+  const { activeTask, timeLeft, isRunning, pausePomodoro, resumePomodoro, formatTime } = usePomodoro();
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [form] = Form.useForm();
 
   useEffect(() => {
     let interval = null;
-    if (isActive && timeLeft > 0) {
+    if (isRunning && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft(timeLeft - 1);
+        // Timer is managed by PomodoroContext
       }, 1000);
-    } else if (isActive && timeLeft === 0) {
-      setIsActive(false);
-      setIsWorkTime(!isWorkTime);
-      setTimeLeft((isWorkTime ? settings.breakTime : settings.workTime) * 60);
-      
-      // Show notification
-      if (settings.notifications && Notification.permission === 'granted') {
-        new Notification(isWorkTime ? 'Break Time!' : 'Work Time!', {
-          body: isWorkTime 
-            ? 'Time for a break!'
-            : 'Time to get back to work!',
-          icon: '/favicon.ico',
-        });
-      }
+    } else if (isRunning && timeLeft === 0) {
+      // Timer completion is handled by PomodoroContext
     }
     return () => clearInterval(interval);
-  }, [isActive, timeLeft, isWorkTime, settings]);
+  }, [isRunning, timeLeft]);
 
   const toggleTimer = () => {
-    setIsActive(!isActive);
-  };
-
-  const resetTimer = () => {
-    setIsActive(false);
-    setIsWorkTime(true);
-    setTimeLeft(settings.workTime * 60);
-  };
-
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    if (isRunning) {
+      pausePomodoro();
+    } else {
+      resumePomodoro();
+    }
   };
 
   const handleSettingsOk = () => {
@@ -62,17 +41,10 @@ const PomodoroTimer = ({ fullWidth = false }) => {
         breakTime: values.breakTime,
       });
       setIsSettingsVisible(false);
-      resetTimer();
     });
   };
 
-  const requestNotificationPermission = () => {
-    if (Notification.permission !== 'granted') {
-      Notification.requestPermission();
-    }
-  };
-
-  const totalTime = isWorkTime ? settings.workTime * 60 : settings.breakTime * 60;
+  const totalTime = settings.workTime * 60;
   const progressPercent = (timeLeft / totalTime) * 100;
 
   if (fullWidth) {
@@ -80,40 +52,35 @@ const PomodoroTimer = ({ fullWidth = false }) => {
       <div className="pomodoro-timer-full">
         <Space direction="vertical" align="center" style={{ width: '100%' }}>
           <Title level={2}>
-            {isWorkTime ? 'Temps de travail' : 'Temps de pause'}
+            {activeTask ? `Working on: ${activeTask.name}` : 'Select a task to start'}
           </Title>
           <Progress
             type="circle"
             percent={progressPercent}
             format={() => formatTime(timeLeft)}
-            strokeColor={isWorkTime ? '#1890ff' : '#52c41a'}
+            strokeColor="#1890ff"
             size={200}
           />
           <Space size="large" style={{ marginTop: 24 }}>
             <Button
               type="primary"
-              icon={isActive ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+              icon={isRunning ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
               onClick={toggleTimer}
               size="large"
+              disabled={!activeTask}
             >
-              {isActive ? 'Pause' : 'Démarrer'}
-            </Button>
-            <Button onClick={resetTimer} size="large">
-              Réinitialiser
+              {isRunning ? 'Pause' : 'Start'}
             </Button>
             <Button
               icon={<SettingOutlined />}
-              onClick={() => {
-                setIsSettingsVisible(true);
-                requestNotificationPermission();
-              }}
+              onClick={() => setIsSettingsVisible(true)}
               size="large"
             />
           </Space>
         </Space>
         
         <Modal
-          title="Paramètres du Pomodoro"
+          title="Pomodoro Settings"
           open={isSettingsVisible}
           onOk={handleSettingsOk}
           onCancel={() => {
@@ -131,16 +98,16 @@ const PomodoroTimer = ({ fullWidth = false }) => {
           >
             <Form.Item
               name="workTime"
-              label="Temps de travail (minutes)"
-              rules={[{ required: true, message: 'Veuillez entrer un temps de travail' }]}
+              label="Work Time (minutes)"
+              rules={[{ required: true, message: 'Please enter work time' }]}
             >
               <InputNumber min={1} max={60} />
             </Form.Item>
 
             <Form.Item
               name="breakTime"
-              label="Temps de pause (minutes)"
-              rules={[{ required: true, message: 'Veuillez entrer un temps de pause' }]}
+              label="Break Time (minutes)"
+              rules={[{ required: true, message: 'Please enter break time' }]}
             >
               <InputNumber min={1} max={60} />
             </Form.Item>
@@ -167,33 +134,28 @@ const PomodoroTimer = ({ fullWidth = false }) => {
       >
         <Space direction="vertical" align="center" style={{ width: '100%' }}>
           <Title level={4}>
-            {isWorkTime ? 'Temps de travail' : 'Temps de pause'}
+            {activeTask ? `Working on: ${activeTask.name}` : 'Select a task'}
           </Title>
           <Progress
             type="circle"
             percent={progressPercent}
             format={() => formatTime(timeLeft)}
-            strokeColor={isWorkTime ? '#1890ff' : '#52c41a'}
+            strokeColor="#1890ff"
             size={120}
           />
           <Space>
             <Button
               type="primary"
-              icon={isActive ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+              icon={isRunning ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
               onClick={toggleTimer}
               size="large"
+              disabled={!activeTask}
             >
-              {isActive ? 'Pause' : 'Démarrer'}
-            </Button>
-            <Button onClick={resetTimer} size="large">
-              Réinitialiser
+              {isRunning ? 'Pause' : 'Start'}
             </Button>
             <Button
               icon={<SettingOutlined />}
-              onClick={() => {
-                setIsSettingsVisible(true);
-                requestNotificationPermission();
-              }}
+              onClick={() => setIsSettingsVisible(true)}
               size="large"
             />
           </Space>
@@ -201,7 +163,7 @@ const PomodoroTimer = ({ fullWidth = false }) => {
       </Card>
 
       <Modal
-        title="Paramètres du Pomodoro"
+        title="Pomodoro Settings"
         open={isSettingsVisible}
         onOk={handleSettingsOk}
         onCancel={() => {
@@ -219,16 +181,16 @@ const PomodoroTimer = ({ fullWidth = false }) => {
         >
           <Form.Item
             name="workTime"
-            label="Temps de travail (minutes)"
-            rules={[{ required: true, message: 'Veuillez entrer un temps de travail' }]}
+            label="Work Time (minutes)"
+            rules={[{ required: true, message: 'Please enter work time' }]}
           >
             <InputNumber min={1} max={60} />
           </Form.Item>
 
           <Form.Item
             name="breakTime"
-            label="Temps de pause (minutes)"
-            rules={[{ required: true, message: 'Veuillez entrer un temps de pause' }]}
+            label="Break Time (minutes)"
+            rules={[{ required: true, message: 'Please enter break time' }]}
           >
             <InputNumber min={1} max={60} />
           </Form.Item>

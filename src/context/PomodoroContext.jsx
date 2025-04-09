@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import moment from 'moment';
 
-const PomodoroContext = createContext();
+export const PomodoroContext = createContext();
 
 export const PomodoroProvider = ({ children }) => {
   const [activeTask, setActiveTask] = useState(null);
@@ -37,10 +37,12 @@ export const PomodoroProvider = ({ children }) => {
   }, [isRunning, timeLeft]);
 
   const startPomodoro = (task) => {
-    setActiveTask(task);
-    setTimeLeft(25 * 60);
-    setIsRunning(true);
-    setSessionStartTime(moment());
+    if (task) {
+      setActiveTask(task);
+      setTimeLeft(25 * 60);
+      setIsRunning(true);
+      setSessionStartTime(moment());
+    }
   };
 
   const pausePomodoro = () => {
@@ -85,6 +87,10 @@ export const PomodoroProvider = ({ children }) => {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  const getTaskTimeSpent = (taskId) => {
+    return taskTimeSpent[taskId] || 0;
+  };
+
   return (
     <PomodoroContext.Provider value={{
       activeTask,
@@ -95,7 +101,8 @@ export const PomodoroProvider = ({ children }) => {
       pausePomodoro,
       resumePomodoro,
       stopPomodoro,
-      formatTime
+      formatTime,
+      getTaskTimeSpent
     }}>
       {children}
     </PomodoroContext.Provider>

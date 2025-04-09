@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, message } from 'antd';
 import MainLayout from './layouts/MainLayout';
 import Dashboard from './pages/Dashboard';
 import CalendarPage from './pages/CalendarPage';
@@ -7,7 +7,15 @@ import CategoriesPage from './pages/CategoriesPage';
 import PomodoroPage from './pages/PomodoroPage';
 import SettingsPage from './pages/SettingsPage';
 import AppContext from './context/AppContext';
+import { PomodoroProvider } from './context/PomodoroContext';
 import './App.css';
+
+// Configure message
+message.config({
+  top: 100,
+  duration: 2,
+  maxCount: 3,
+});
 
 function App() {
   return (
@@ -39,7 +47,9 @@ function App() {
 export default function AppWithContext() {
   return (
     <AppContext>
-      <App />
+      <PomodoroProvider>
+        <App />
+      </PomodoroProvider>
     </AppContext>
   );
 }

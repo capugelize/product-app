@@ -1,14 +1,17 @@
-import { useState } from 'react';
-import { Card, Button, List, Modal, Form, Input, Select, DatePicker, Space, message, InputNumber } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useAppContext } from '../context/AppContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import moment from 'moment';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAppContext } from '../context/AppContext';
+import { usePomodoro } from '../context/PomodoroContext';
+import './TaskItem.css';
 
 const { Option } = Select;
 
 const TaskList = () => {
-  const { tasks, addTask, editTask, deleteTask, settings } = useAppContext();
+  const { tasks, addTask, editTask, deleteTask, updateTaskStatus } = useAppContext();
+  const { activeTask, startPomodoro, stopPomodoro, isRunning, getTaskTimeSpent } = usePomodoro();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
@@ -17,8 +20,10 @@ const TaskList = () => {
     setEditingTask(task);
     if (task) {
       form.setFieldsValue({
-        ...task,
-        deadline: task.deadline || null,
+        name: task.name,
+        priority: task.priority,
+        category: task.category,
+        deadline: task.deadline ? moment(task.deadline) : null,
       });
     } else {
       form.resetFields();
@@ -30,41 +35,34 @@ const TaskList = () => {
     form.validateFields().then(values => {
       const taskData = {
         ...values,
-        id: editingTask?.id || Date.now().toString(),
-        createdAt: editingTask?.createdAt || moment().toISOString(),
-        deadline: values.deadline ? moment(values.deadline).format() : null,
-        status: values.status || 'not_started',
-        priority: values.priority || 'medium',
-        category: values.category || 'work',
-        duration: values.duration || 25,
-        completed: values.status === 'completed',
+        deadline: values.deadline ? values.deadline.format() : null,
+        status: 'not_started',
       };
 
       if (editingTask) {
         editTask(editingTask.id, taskData);
-        message.success('Tâche mise à jour avec succès');
+        message.success('Task updated successfully');
       } else {
         addTask(taskData);
-        message.success('Tâche créée avec succès');
+        message.success('Task added successfully');
       }
 
       setIsModalVisible(false);
       form.resetFields();
-      setEditingTask(null);
-    }).catch(error => {
-      console.error('Form validation failed:', error);
     });
-  };
-
-  const handleCancel = () => {
-    setIsModalVisible(false);
-    form.resetFields();
-    setEditingTask(null);
   };
 
   const handleDelete = (taskId) => {
     deleteTask(taskId);
     message.success('Task deleted successfully');
+  };
+
+  const handleStartPomodoro = (task) => {
+    if (activeTask && activeTask.id === task.id) {
+      stopPomodoro();
+    } else {
+      startPomodoro(task);
+    }
   };
 
   return (
@@ -86,9 +84,16 @@ const TaskList = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
+              className={`task-item ${activeTask?.id === task.id ? 'active-pomodoro' : ''}`}
             >
               <List.Item
                 actions={[
+                  <Button
+                    type="text"
+                    icon={<PlayCircleOutlined />}
+                    onClick={() => handleStartPomodoro(task)}
+                    className={activeTask?.id === task.id && isRunning ? 'active-timer' : ''}
+                  />,
                   <Button
                     type="text"
                     icon={<EditOutlined />}
@@ -116,6 +121,7 @@ const TaskList = () => {
                       {task.deadline && (
                         <div>Deadline: {moment(task.deadline).format('YYYY-MM-DD HH:mm')}</div>
                       )}
+                      <div>Time spent: {getTaskTimeSpent(task.id)} minutes</div>
                     </Space>
                   }
                 />
@@ -126,104 +132,55 @@ const TaskList = () => {
       </AnimatePresence>
 
       <Modal
-        title={editingTask ? 'Modifier la tâche' : 'Nouvelle tâche'}
+        title={editingTask ? "Edit Task" : "Add Task"}
         open={isModalVisible}
         onOk={handleOk}
-        onCancel={handleCancel}
-        destroyOnClose
+        onCancel={() => {
+          setIsModalVisible(false);
+          form.resetFields();
+        }}
       >
         <Form
           form={form}
           layout="vertical"
-          initialValues={{
-            priority: 'medium',
-            category: 'work',
-            status: 'not_started',
-            duration: 25,
-            ...editingTask,
-            deadline: editingTask?.deadline ? moment(editingTask.deadline) : null,
-          }}
         >
           <Form.Item
             name="name"
-            label="Nom de la tâche"
-            rules={[{ required: true, message: 'Veuillez entrer un nom' }]}
+            label="Task Name"
+            rules={[{ required: true, message: 'Please enter task name' }]}
           >
             <Input />
           </Form.Item>
 
           <Form.Item
             name="priority"
-            label="Priorité"
-            rules={[{ required: true, message: 'Veuillez sélectionner une priorité' }]}
+            label="Priority"
+            initialValue="medium"
           >
             <Select>
-              <Option value="low">Basse</Option>
-              <Option value="medium">Moyenne</Option>
-              <Option value="high">Haute</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="status"
-            label="Statut"
-            rules={[{ required: true, message: 'Veuillez sélectionner un statut' }]}
-          >
-            <Select>
-              <Option value="not_started">⏳ Not started</Option>
-              <Option value="in_progress">🔧 In progress</Option>
-              <Option value="completed">✅ Completed</Option>
+              <Option value="high">High</Option>
+              <Option value="medium">Medium</Option>
+              <Option value="low">Low</Option>
             </Select>
           </Form.Item>
 
           <Form.Item
             name="category"
-            label="Catégorie"
-            rules={[{ required: true, message: 'Veuillez sélectionner une catégorie' }]}
+            label="Category"
+            initialValue="work"
           >
             <Select>
-              {settings.categories?.map(category => (
-                <Option key={category.id} value={category.id}>
-                  {category.icon} {category.name}
-                </Option>
-              ))}
+              <Option value="work">Work</Option>
+              <Option value="personal">Personal</Option>
+              <Option value="study">Study</Option>
             </Select>
           </Form.Item>
 
           <Form.Item
             name="deadline"
-            label="Date et heure limite"
-            rules={[{ required: true, message: 'Veuillez sélectionner une date et une heure' }]}
+            label="Deadline"
           >
-            <DatePicker
-              showTime
-              format="YYYY-MM-DD HH:mm"
-              className="w-full"
-              placeholder="Sélectionnez la date et l'heure"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="duration"
-            label="Durée estimée (minutes)"
-            rules={[{ required: true, message: 'Veuillez entrer une durée' }]}
-          >
-            <InputNumber min={1} max={480} className="w-full" />
-          </Form.Item>
-
-          <Form.Item
-            name="notificationTime"
-            label="Notification avant l'échéance"
-            tooltip="Choisissez quand vous souhaitez être notifié avant l'échéance"
-          >
-            <Select>
-              <Option value="5">5 minutes avant</Option>
-              <Option value="15">15 minutes avant</Option>
-              <Option value="30">30 minutes avant</Option>
-              <Option value="60">1 heure avant</Option>
-              <Option value="120">2 heures avant</Option>
-              <Option value="1440">1 jour avant</Option>
-            </Select>
+            <DatePicker showTime />
           </Form.Item>
         </Form>
       </Modal>
