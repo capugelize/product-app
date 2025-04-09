@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message, Collapse, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
@@ -12,7 +12,7 @@ const { Panel } = Collapse;
 
 const TaskList = () => {
   const { tasks, addTask, editTask, deleteTask, updateTaskStatus } = useAppContext();
-  const { activeTask, startPomodoro, stopPomodoro, isRunning, getTaskTimeSpent, getTaskProgress } = usePomodoro();
+  const { activeTask, startPomodoro, stopPomodoro, isRunning, getTaskTimeSpent, getTaskProgress, timeLeft } = usePomodoro();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
@@ -146,6 +146,12 @@ const TaskList = () => {
     return STATUSES.find(s => s.value === status)?.emoji || '⏳';
   };
 
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
   return (
     <Card
       title="Tasks"
@@ -155,6 +161,13 @@ const TaskList = () => {
         </Button>
       }
     >
+      {isRunning && activeTask && (
+        <div className="timer-display active">
+          <ClockCircleOutlined className="timer-icon" />
+          <span className="timer-text">{formatTime(timeLeft)}</span>
+          <span className="task-name">{activeTask.name}</span>
+        </div>
+      )}
       <AnimatePresence>
         <List
           dataSource={tasks}
