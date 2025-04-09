@@ -8,13 +8,15 @@ const { Option } = Select;
 const getCategoryIcon = (category) => {
   switch (category) {
     case 'work':
-      return '💻';
+      return '💼';
     case 'personal':
-      return '📖';
+      return '🏠';
+    case 'study':
+      return '📚';
     case 'health':
-      return '🏃‍♂️';
-    case 'shopping':
-      return '🛒';
+      return '💪';
+    case 'other':
+      return '📝';
     default:
       return '📝';
   }
@@ -26,10 +28,12 @@ const getCategoryColor = (category) => {
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
     case 'personal':
       return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-    case 'health':
+    case 'study':
       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-    case 'shopping':
+    case 'health':
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+    case 'other':
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
   }

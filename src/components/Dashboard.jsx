@@ -16,6 +16,23 @@ const Dashboard = () => {
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
 
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case 'work':
+        return '💼';
+      case 'personal':
+        return '🏠';
+      case 'study':
+        return '📚';
+      case 'health':
+        return '💪';
+      case 'other':
+        return '📝';
+      default:
+        return '📝';
+    }
+  };
+
   const getTotalProductivity = () => {
     const tasks = Object.entries(taskProductivity);
     if (tasks.length === 0) return 0;
@@ -141,6 +158,15 @@ const Dashboard = () => {
           {priority}
         </Tag>
       ),
+    },
+    {
+      title: 'Category',
+      dataIndex: 'category',
+      key: 'category',
+      render: (category) => {
+        const icon = getCategoryIcon(category);
+        return <Tag>{icon} {category}</Tag>;
+      },
     },
     {
       title: 'Deadline',
@@ -338,6 +364,11 @@ const Dashboard = () => {
                         }>
                           {task.status.replace('_', ' ')}
                         </Tag>
+                        {task.category && (
+                          <Tag>
+                            {getCategoryIcon(task.category)} {task.category}
+                          </Tag>
+                        )}
                       </Space>
                       {task.deadline && (
                         <Text type="secondary">
@@ -375,6 +406,7 @@ const Dashboard = () => {
             description: '',
             status: 'not_started',
             priority: 'medium',
+            category: 'work',
           }}
         >
           <Form.Item
@@ -413,6 +445,20 @@ const Dashboard = () => {
               <Option value="low">Low</Option>
               <Option value="medium">Medium</Option>
               <Option value="high">High</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="category"
+            label="Category"
+            rules={[{ required: true, message: 'Please select a category' }]}
+          >
+            <Select>
+              <Option value="work">💼 Work</Option>
+              <Option value="personal">🏠 Personal</Option>
+              <Option value="study">📚 Study</Option>
+              <Option value="health">💪 Health</Option>
+              <Option value="other">📝 Other</Option>
             </Select>
           </Form.Item>
 

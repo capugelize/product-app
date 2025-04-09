@@ -98,19 +98,15 @@ const TaskNotifications = () => {
   const getCategoryIcon = (category) => {
     switch (category) {
       case 'work':
-        return '💻';
+        return '💼';
       case 'personal':
-        return '📖';
+        return '🏠';
+      case 'study':
+        return '📚';
       case 'health':
-        return '🏃‍♂️';
-      case 'shopping':
-        return '🛒';
-      case 'projects':
-        return '📋';
-      case 'appointments':
-        return '📅';
-      case 'leisure':
-        return '🎮';
+        return '💪';
+      case 'other':
+        return '📝';
       default:
         return '📝';
     }
@@ -119,19 +115,15 @@ const TaskNotifications = () => {
   const getCategoryLabel = (category) => {
     switch (category) {
       case 'work':
-        return 'Travail';
+        return 'Work';
       case 'personal':
-        return 'Personnel';
+        return 'Personal';
+      case 'study':
+        return 'Study';
       case 'health':
-        return 'Santé';
-      case 'shopping':
-        return 'Courses';
-      case 'projects':
-        return 'Projets';
-      case 'appointments':
-        return 'Rendez-vous';
-      case 'leisure':
-        return 'Loisirs';
+        return 'Health';
+      case 'other':
+        return 'Other';
       default:
         return category;
     }

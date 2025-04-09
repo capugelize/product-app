@@ -77,13 +77,11 @@ const NewTaskModal = ({ visible, onCancel, onOk }) => {
           rules={[{ required: true, message: 'Veuillez sélectionner une catégorie' }]}
         >
           <Select placeholder="Sélectionnez une catégorie">
-            <Option value="work">💻 Travail</Option>
-            <Option value="personal">📖 Personnel</Option>
-            <Option value="health">🏃‍♂️ Santé</Option>
-            <Option value="shopping">🛒 Courses</Option>
-            <Option value="projects">📋 Projets</Option>
-            <Option value="appointments">📅 Rendez-vous</Option>
-            <Option value="leisure">🎮 Loisirs</Option>
+            <Option value="work">💼 Work</Option>
+            <Option value="personal">🏠 Personal</Option>
+            <Option value="study">📚 Study</Option>
+            <Option value="health">💪 Health</Option>
+            <Option value="other">📝 Other</Option>
           </Select>
         </Form.Item>
 

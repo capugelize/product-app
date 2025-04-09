@@ -15,13 +15,11 @@ const initialSettings = {
   breakTime: 5,
   notifications: true,
   categories: [
-    { id: 'work', name: 'Travail', icon: '💻', color: '#1890ff' },
-    { id: 'personal', name: 'Personnel', icon: '📖', color: '#722ed1' },
-    { id: 'health', name: 'Santé', icon: '🏃‍♂️', color: '#52c41a' },
-    { id: 'shopping', name: 'Courses', icon: '🛒', color: '#faad14' },
-    { id: 'projects', name: 'Projets', icon: '📋', color: '#13c2c2' },
-    { id: 'appointments', name: 'Rendez-vous', icon: '📅', color: '#eb2f96' },
-    { id: 'leisure', name: 'Loisirs', icon: '🎮', color: '#fa8c16' },
+    { id: 'work', name: 'Work', icon: '💼', color: '#1890ff' },
+    { id: 'personal', name: 'Personal', icon: '🏠', color: '#722ed1' },
+    { id: 'study', name: 'Study', icon: '📚', color: '#52c41a' },
+    { id: 'health', name: 'Health', icon: '💪', color: '#faad14' },
+    { id: 'other', name: 'Other', icon: '📝', color: '#13c2c2' },
   ],
 };
 

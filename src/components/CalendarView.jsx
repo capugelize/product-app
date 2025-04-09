@@ -78,16 +78,12 @@ const CalendarView = () => {
         return '#1890ff';
       case 'personal':
         return '#722ed1';
-      case 'health':
+      case 'study':
         return '#52c41a';
-      case 'shopping':
+      case 'health':
         return '#faad14';
-      case 'projects':
+      case 'other':
         return '#13c2c2';
-      case 'appointments':
-        return '#eb2f96';
-      case 'leisure':
-        return '#fa8c16';
       default:
         return '#bfbfbf';
     }
