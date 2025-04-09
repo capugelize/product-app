@@ -30,26 +30,36 @@ const TaskList = () => {
     form.validateFields().then(values => {
       const taskData = {
         ...values,
-        id: editingTask?.id || Date.now(),
-        createdAt: editingTask?.createdAt || new Date().toISOString(),
+        id: editingTask?.id || Date.now().toString(),
+        createdAt: editingTask?.createdAt || moment().toISOString(),
+        deadline: values.deadline ? moment(values.deadline).format() : null,
+        status: values.status || 'not_started',
+        priority: values.priority || 'medium',
+        category: values.category || 'work',
+        duration: values.duration || 25,
+        completed: values.status === 'completed',
       };
 
       if (editingTask) {
-        editTask(taskData.id, taskData);
-        message.success('Task updated successfully');
+        editTask(editingTask.id, taskData);
+        message.success('Tâche mise à jour avec succès');
       } else {
         addTask(taskData);
-        message.success('Task created successfully');
+        message.success('Tâche créée avec succès');
       }
 
       setIsModalVisible(false);
       form.resetFields();
+      setEditingTask(null);
+    }).catch(error => {
+      console.error('Form validation failed:', error);
     });
   };
 
   const handleCancel = () => {
     setIsModalVisible(false);
     form.resetFields();
+    setEditingTask(null);
   };
 
   const handleDelete = (taskId) => {
@@ -104,7 +114,7 @@ const TaskList = () => {
                         task.status === 'completed' ? '✅ Completed' : 'Unknown'
                       }</div>
                       {task.deadline && (
-                        <div>Deadline: {moment(task.deadline).format('YYYY-MM-DD')}</div>
+                        <div>Deadline: {moment(task.deadline).format('YYYY-MM-DD HH:mm')}</div>
                       )}
                     </Space>
                   }
@@ -128,7 +138,10 @@ const TaskList = () => {
           initialValues={{
             priority: 'medium',
             category: 'work',
-            notificationTime: '30',
+            status: 'not_started',
+            duration: 25,
+            ...editingTask,
+            deadline: editingTask?.deadline ? moment(editingTask.deadline) : null,
           }}
         >
           <Form.Item
@@ -179,9 +192,15 @@ const TaskList = () => {
 
           <Form.Item
             name="deadline"
-            label="Date limite"
+            label="Date et heure limite"
+            rules={[{ required: true, message: 'Veuillez sélectionner une date et une heure' }]}
           >
-            <DatePicker className="w-full" />
+            <DatePicker
+              showTime
+              format="YYYY-MM-DD HH:mm"
+              className="w-full"
+              placeholder="Sélectionnez la date et l'heure"
+            />
           </Form.Item>
 
           <Form.Item

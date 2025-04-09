@@ -72,11 +72,12 @@ const AppContext = ({ children }) => {
   const addTask = (task) => {
     const newTask = {
       ...task,
-      id: Date.now().toString(),
+      id: task.id || Date.now().toString(),
       completed: task.status === 'completed',
       status: task.status || 'not_started',
-      createdAt: moment(),
-      duration: task.duration || 25, // Default to one pomodoro
+      createdAt: task.createdAt ? moment(task.createdAt) : moment(),
+      deadline: task.deadline ? moment(task.deadline) : null,
+      duration: task.duration || 25,
     };
     setTasks(prevTasks => [...prevTasks, newTask]);
     return newTask;
@@ -105,6 +106,7 @@ const AppContext = ({ children }) => {
             ...task, 
             ...updatedTask,
             completed: updatedTask.status === 'completed',
+            deadline: updatedTask.deadline ? moment(updatedTask.deadline) : null,
             duration: updatedTask.duration || task.duration || 25,
           }
         : task
