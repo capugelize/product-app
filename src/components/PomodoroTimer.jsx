@@ -27,18 +27,6 @@ const PomodoroTimer = ({ fullWidth = false }) => {
   const [form] = Form.useForm();
   const [progressForm] = Form.useForm();
 
-  useEffect(() => {
-    let interval = null;
-    if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        // Timer is managed by PomodoroContext
-      }, 1000);
-    } else if (isRunning && timeLeft === 0) {
-      // Timer completion is handled by PomodoroContext
-    }
-    return () => clearInterval(interval);
-  }, [isRunning, timeLeft]);
-
   const toggleTimer = () => {
     if (isRunning) {
       pausePomodoro();
@@ -254,72 +242,9 @@ const PomodoroTimer = ({ fullWidth = false }) => {
             >
               Stop & Save
             </Button>
-            <Button
-              icon={<SettingOutlined />}
-              onClick={() => setIsSettingsVisible(true)}
-              size="large"
-            />
           </Space>
         </Space>
       </Card>
-
-      <Modal
-        title="Pomodoro Settings"
-        open={isSettingsVisible}
-        onOk={handleSettingsOk}
-        onCancel={() => {
-          form.resetFields();
-          setIsSettingsVisible(false);
-        }}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          initialValues={{
-            workTime: settings.workTime,
-            breakTime: settings.breakTime,
-          }}
-        >
-          <Form.Item
-            name="workTime"
-            label="Work Time (minutes)"
-            rules={[{ required: true, message: 'Please enter work time' }]}
-          >
-            <InputNumber min={1} max={60} />
-          </Form.Item>
-
-          <Form.Item
-            name="breakTime"
-            label="Break Time (minutes)"
-            rules={[{ required: true, message: 'Please enter break time' }]}
-          >
-            <InputNumber min={1} max={60} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title="Save Progress"
-        open={isProgressModalVisible}
-        onOk={handleProgressSubmit}
-        onCancel={() => {
-          setIsProgressModalVisible(false);
-          progressForm.resetFields();
-        }}
-      >
-        <Form
-          form={progressForm}
-          layout="vertical"
-        >
-          <Form.Item
-            name="progress"
-            label={`Progress for Step ${currentStep}`}
-            rules={[{ required: true, message: 'Please describe your progress' }]}
-          >
-            <Input.TextArea rows={4} placeholder="Describe what you accomplished in this step..." />
-          </Form.Item>
-        </Form>
-      </Modal>
     </motion.div>
   );
 };
