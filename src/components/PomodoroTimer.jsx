@@ -41,7 +41,7 @@ const PomodoroTimer = ({ fullWidth = false }) => {
 
   const handleProgressSubmit = () => {
     progressForm.validateFields().then(values => {
-      stopPomodoro(values.progress);
+      stopPomodoro(values.progress, values.description);
       setIsProgressModalVisible(false);
       progressForm.resetFields();
     });
@@ -169,10 +169,17 @@ const PomodoroTimer = ({ fullWidth = false }) => {
           >
             <Form.Item
               name="progress"
-              label={`Progress for Step ${currentStep}`}
-              rules={[{ required: true, message: 'Please describe your progress' }]}
+              label={`Progress for Step ${currentStep} (%)`}
+              rules={[{ required: true, message: 'Please enter progress percentage' }]}
             >
-              <Input.TextArea rows={4} placeholder="Describe what you accomplished in this step..." />
+              <InputNumber min={0} max={100} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item
+              name="description"
+              label="Detailed Description"
+              rules={[{ required: true, message: 'Please provide a detailed description' }]}
+            >
+              <Input.TextArea rows={6} placeholder="Provide a detailed description of what you did in this step..." />
             </Form.Item>
           </Form>
         </Modal>

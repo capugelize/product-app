@@ -10,7 +10,7 @@ const { TabPane } = Tabs;
 
 const Analysis = () => {
   const { tasks } = useAppContext();
-  const { taskTimeSpent, taskProgress, taskProductivity } = usePomodoro();
+  const { taskTimeSpent, taskProgress, taskProductivity, getTaskStepDescription } = usePomodoro();
   const [activeTaskId, setActiveTaskId] = useState(null);
 
   const columns = [
@@ -67,18 +67,26 @@ const Analysis = () => {
       title: 'Progress',
       dataIndex: 'progress',
       key: 'progress',
-      render: (progress) => (
+      render: (progress, record) => (
         <Space direction="vertical">
-          {Object.entries(progress).map(([step, value]) => (
-            <div key={step}>
-              <Text strong>{step}</Text>
-              <Progress
-                percent={parseInt(value) || 0}
-                size="small"
-                status={parseInt(value) === 100 ? 'success' : 'active'}
-              />
-            </div>
-          ))}
+          {Object.entries(progress).map(([step, value]) => {
+            const description = getTaskStepDescription(record.key, step.replace('step', ''));
+            return (
+              <div key={step}>
+                <Text strong>{step}</Text>
+                <Progress
+                  percent={parseInt(value) || 0}
+                  size="small"
+                  status={parseInt(value) === 100 ? 'success' : 'active'}
+                />
+                {description && (
+                  <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                    {description}
+                  </Text>
+                )}
+              </div>
+            );
+          })}
         </Space>
       ),
     },

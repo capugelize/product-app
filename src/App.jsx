@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
 import { Layout, Menu, theme, Typography, Space, Progress } from 'antd';
+import { 
+  HomeOutlined, 
+  ClockCircleOutlined, 
+  BarChartOutlined,
+  DashboardOutlined
+} from '@ant-design/icons';
 import TaskList from './components/TaskList';
 import PomodoroTimer from './components/PomodoroTimer';
 import AppContext from './context/AppContext';
 import { PomodoroProvider } from './context/PomodoroContext';
 import Analysis from './components/Analysis';
+import Dashboard from './components/Dashboard';
 import { usePomodoro } from './context/PomodoroContext';
 import './App.css';
 
-const { Header, Content } = Layout;
+const { Header, Content, Sider } = Layout;
 const { Text } = Typography;
 
 const TimerTab = () => {
@@ -48,42 +55,47 @@ const TimerTab = () => {
 };
 
 const App = () => {
-  const [currentTab, setCurrentTab] = useState('tasks');
+  const [collapsed, setCollapsed] = useState(false);
+  const [selectedTab, setSelectedTab] = useState('dashboard');
   const {
     token: { colorBgContainer },
   } = theme.useToken();
 
-  const items = [
+  const menuItems = [
+    {
+      key: 'dashboard',
+      icon: <DashboardOutlined />,
+      label: 'Dashboard',
+    },
     {
       key: 'tasks',
+      icon: <HomeOutlined />,
       label: 'Tasks',
     },
     {
-      key: 'analysis',
-      label: 'Analysis',
-    },
-    {
       key: 'pomodoro',
+      icon: <ClockCircleOutlined />,
       label: 'Pomodoro',
     },
     {
-      key: 'categories',
-      label: 'Categories',
+      key: 'analysis',
+      icon: <BarChartOutlined />,
+      label: 'Analysis',
     },
   ];
 
   const renderContent = () => {
-    switch (currentTab) {
+    switch (selectedTab) {
+      case 'dashboard':
+        return <Dashboard />;
       case 'tasks':
         return <TaskList />;
+      case 'pomodoro':
+        return <PomodoroTimer />;
       case 'analysis':
         return <Analysis />;
-      case 'pomodoro':
-        return <PomodoroTimer fullWidth={true} />;
-      case 'categories':
-        return <div>Categories Management</div>;
       default:
-        return <TaskList />;
+        return <Dashboard />;
     }
   };
 
@@ -91,30 +103,24 @@ const App = () => {
     <AppContext>
       <PomodoroProvider>
         <Layout style={{ minHeight: '100vh' }}>
-          <TimerTab />
-          <Header style={{ display: 'flex', alignItems: 'center' }}>
-            <div className="logo" />
+          <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
+            <div style={{ height: 32, margin: 16, background: 'rgba(255, 255, 255, 0.2)' }} />
             <Menu
               theme="dark"
-              mode="horizontal"
-              selectedKeys={[currentTab]}
-              items={items}
-              onClick={({ key }) => setCurrentTab(key)}
-              style={{ flex: 1, minWidth: 0 }}
+              defaultSelectedKeys={['dashboard']}
+              mode="inline"
+              items={menuItems}
+              onClick={({ key }) => setSelectedTab(key)}
             />
-          </Header>
-          <Content style={{ padding: '24px' }}>
-            <div
-              style={{
-                padding: 24,
-                minHeight: 360,
-                background: colorBgContainer,
-                borderRadius: '8px',
-              }}
-            >
-              {renderContent()}
-            </div>
-          </Content>
+          </Sider>
+          <Layout className="site-layout">
+            <Header style={{ padding: 0, background: colorBgContainer }} />
+            <Content style={{ margin: '24px 16px' }}>
+              <div style={{ padding: 24, minHeight: 360, background: colorBgContainer }}>
+                {renderContent()}
+              </div>
+            </Content>
+          </Layout>
         </Layout>
       </PomodoroProvider>
     </AppContext>

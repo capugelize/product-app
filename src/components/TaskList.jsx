@@ -75,7 +75,7 @@ const TaskList = () => {
 
   const handleStartPomodoro = (task) => {
     if (activeTask && activeTask.id === task.id) {
-      stopPomodoro();
+      stopPomodoro(0, "Timer stopped");
     } else {
       startPomodoro(task);
     }

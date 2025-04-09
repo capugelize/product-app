@@ -5,7 +5,7 @@ import { usePomodoro } from '../context/PomodoroContext';
 const { Title, Text } = Typography;
 
 const ProductivityStats = ({ taskId }) => {
-  const { getTaskTimeSpent, getTaskProgress, getTaskProductivity } = usePomodoro();
+  const { getTaskTimeSpent, getTaskProgress, getTaskProductivity, getTaskStepDescription } = usePomodoro();
   
   const timeSpent = getTaskTimeSpent(taskId);
   const progress = getTaskProgress(taskId);
@@ -37,16 +37,22 @@ const ProductivityStats = ({ taskId }) => {
         <List
           header={<Text strong>Step-by-Step Progress</Text>}
           dataSource={Object.entries(progress)}
-          renderItem={([step, progressText]) => {
+          renderItem={([step, progressValue]) => {
             const stepTime = timeSpent[step] || 0;
             const stepProductivity = productivity[step] || 0;
+            const stepNumber = step.replace('step', '');
+            const description = getTaskStepDescription(taskId, stepNumber);
             
             return (
               <List.Item>
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <div>
                     <Text strong>{step}: </Text>
-                    <Text>{progressText}</Text>
+                    <Progress
+                      percent={progressValue}
+                      size="small"
+                      status={progressValue >= 70 ? 'success' : progressValue >= 40 ? 'normal' : 'exception'}
+                    />
                   </div>
                   <div>
                     <Text type="secondary">Time: {formatTime(stepTime)}</Text>
@@ -56,6 +62,13 @@ const ProductivityStats = ({ taskId }) => {
                       status={stepProductivity >= 70 ? 'success' : stepProductivity >= 40 ? 'normal' : 'exception'}
                     />
                   </div>
+                  {description && (
+                    <div>
+                      <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+                        {description}
+                      </Text>
+                    </div>
+                  )}
                 </Space>
               </List.Item>
             );

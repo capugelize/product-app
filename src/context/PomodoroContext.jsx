@@ -11,6 +11,7 @@ export const PomodoroProvider = ({ children }) => {
   const [taskTimeSpent, setTaskTimeSpent] = useState({});
   const [taskProgress, setTaskProgress] = useState({});
   const [taskProductivity, setTaskProductivity] = useState({});
+  const [taskStepDescriptions, setTaskStepDescriptions] = useState({});
   const [currentStep, setCurrentStep] = useState(1);
   const [timerInterval, setTimerInterval] = useState(null);
 
@@ -19,6 +20,7 @@ export const PomodoroProvider = ({ children }) => {
     const savedTimeSpent = localStorage.getItem('taskTimeSpent');
     const savedProgress = localStorage.getItem('taskProgress');
     const savedProductivity = localStorage.getItem('taskProductivity');
+    const savedStepDescriptions = localStorage.getItem('taskStepDescriptions');
     if (savedTimeSpent) {
       setTaskTimeSpent(JSON.parse(savedTimeSpent));
     }
@@ -28,6 +30,9 @@ export const PomodoroProvider = ({ children }) => {
     if (savedProductivity) {
       setTaskProductivity(JSON.parse(savedProductivity));
     }
+    if (savedStepDescriptions) {
+      setTaskStepDescriptions(JSON.parse(savedStepDescriptions));
+    }
   }, []);
 
   // Save data to localStorage whenever it changes
@@ -35,7 +40,8 @@ export const PomodoroProvider = ({ children }) => {
     localStorage.setItem('taskTimeSpent', JSON.stringify(taskTimeSpent));
     localStorage.setItem('taskProgress', JSON.stringify(taskProgress));
     localStorage.setItem('taskProductivity', JSON.stringify(taskProductivity));
-  }, [taskTimeSpent, taskProgress, taskProductivity]);
+    localStorage.setItem('taskStepDescriptions', JSON.stringify(taskStepDescriptions));
+  }, [taskTimeSpent, taskProgress, taskProductivity, taskStepDescriptions]);
 
   // Timer effect
   useEffect(() => {
@@ -81,7 +87,7 @@ export const PomodoroProvider = ({ children }) => {
     setIsRunning(true);
   };
 
-  const stopPomodoro = (progress) => {
+  const stopPomodoro = (progress, description) => {
     if (activeTask && sessionStartTime) {
       const timeSpent = moment().diff(sessionStartTime, 'minutes');
       const taskId = activeTask.id;
@@ -96,8 +102,8 @@ export const PomodoroProvider = ({ children }) => {
         }
       }));
 
-      // Update progress if provided, otherwise use a default value
-      const progressValue = progress || 50; // Default to 50% if no progress provided
+      // Update progress and description
+      const progressValue = progress || 50;
       setTaskProgress(prev => ({
         ...prev,
         [taskId]: {
@@ -106,7 +112,16 @@ export const PomodoroProvider = ({ children }) => {
         }
       }));
 
-      // Calculate productivity score (0-100) based on time spent and progress
+      // Save step description
+      setTaskStepDescriptions(prev => ({
+        ...prev,
+        [taskId]: {
+          ...prev[taskId],
+          [`step${currentStep}`]: description || ''
+        }
+      }));
+
+      // Calculate productivity score
       const productivityScore = calculateProductivityScore(timeSpent, progressValue);
       setTaskProductivity(prev => ({
         ...prev,
@@ -163,7 +178,25 @@ export const PomodoroProvider = ({ children }) => {
 
       // Calculate productivity for completed Pomodoro
       const progressValue = 100; // Assume 100% progress for completed Pomodoro
+      const description = "Completed Pomodoro session"; // Default description for completed sessions
       const productivityScore = calculateProductivityScore(timeSpent, progressValue);
+      
+      setTaskProgress(prev => ({
+        ...prev,
+        [taskId]: {
+          ...prev[taskId],
+          [`step${currentStep}`]: progressValue
+        }
+      }));
+
+      setTaskStepDescriptions(prev => ({
+        ...prev,
+        [taskId]: {
+          ...prev[taskId],
+          [`step${currentStep}`]: description
+        }
+      }));
+
       setTaskProductivity(prev => ({
         ...prev,
         [taskId]: {
@@ -194,6 +227,10 @@ export const PomodoroProvider = ({ children }) => {
     return taskProductivity[taskId] || { average: 0 };
   };
 
+  const getTaskStepDescription = (taskId, step) => {
+    return taskStepDescriptions[taskId]?.[`step${step}`] || '';
+  };
+
   const nextStep = () => {
     setCurrentStep(prev => prev + 1);
   };
@@ -211,6 +248,7 @@ export const PomodoroProvider = ({ children }) => {
       taskTimeSpent,
       taskProgress,
       taskProductivity,
+      taskStepDescriptions,
       startPomodoro,
       pausePomodoro,
       resumePomodoro,
@@ -219,6 +257,7 @@ export const PomodoroProvider = ({ children }) => {
       getTaskTimeSpent,
       getTaskProgress,
       getTaskProductivity,
+      getTaskStepDescription,
       nextStep,
       previousStep
     }}>
