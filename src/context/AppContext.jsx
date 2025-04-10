@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import moment from 'moment';
 import 'moment/locale/fr';
 
@@ -24,6 +24,24 @@ const initialSettings = {
 };
 
 const AppContext = ({ children }) => {
+  // Array to store subscription callbacks
+  const [subscribers, setSubscribers] = useState([]);
+
+  // Subscribe to data changes
+  const subscribe = useCallback((callback) => {
+    setSubscribers(prev => [...prev, callback]);
+    
+    // Return unsubscribe function
+    return () => {
+      setSubscribers(prev => prev.filter(cb => cb !== callback));
+    };
+  }, []);
+
+  // Notify all subscribers about data change
+  const notifySubscribers = useCallback((type, data) => {
+    subscribers.forEach(callback => callback(type, data));
+  }, [subscribers]);
+
   const [tasks, setTasks] = useState(() => {
     const savedTasks = localStorage.getItem('tasks');
     if (savedTasks) {
@@ -63,13 +81,19 @@ const AppContext = ({ children }) => {
       createdAt: task.createdAt ? task.createdAt.format() : null,
       subtasks: task.subtasks || [],
     }))));
-  }, [tasks]);
+    
+    // Notify subscribers when tasks change
+    notifySubscribers('tasks', tasks);
+  }, [tasks, notifySubscribers]);
 
   useEffect(() => {
     localStorage.setItem('settings', JSON.stringify(settings));
-  }, [settings]);
+    
+    // Notify subscribers when settings change
+    notifySubscribers('settings', settings);
+  }, [settings, notifySubscribers]);
 
-  const addTask = (task) => {
+  const addTask = useCallback((task) => {
     const newTask = {
       ...task,
       id: task.id || Date.now().toString(),
@@ -81,130 +105,125 @@ const AppContext = ({ children }) => {
       subtasks: task.subtasks || [],
     };
     setTasks(prevTasks => [...prevTasks, newTask]);
+    notifySubscribers('taskAdded', newTask);
     return newTask;
-  };
+  }, [notifySubscribers]);
 
-  const toggleTask = (taskId) => {
-    setTasks(prevTasks => prevTasks.map(task =>
-      task.id === taskId
-        ? { ...task, completed: !task.completed }
-        : task
-    ));
-  };
+  const toggleTask = useCallback((taskId) => {
+    setTasks(prevTasks => {
+      const newTasks = prevTasks.map(task =>
+        task.id === taskId
+          ? { ...task, completed: !task.completed }
+          : task
+      );
+      notifySubscribers('taskToggled', { taskId, tasks: newTasks });
+      return newTasks;
+    });
+  }, [notifySubscribers]);
 
-  const toggleSubtask = (taskId, subtaskId) => {
-    setTasks(prevTasks => prevTasks.map(task =>
-      task.id === taskId
-        ? { 
-            ...task, 
-            subtasks: task.subtasks.map(subtask => 
-              subtask.id === subtaskId 
-                ? { ...subtask, completed: !subtask.completed }
-                : subtask
-            )
-          }
-        : task
-    ));
+  const toggleSubtask = useCallback((taskId, subtaskId) => {
+    setTasks(prevTasks => {
+      const updatedTasks = prevTasks.map(task =>
+        task.id === taskId
+          ? { 
+              ...task, 
+              subtasks: task.subtasks.map(subtask => 
+                subtask.id === subtaskId 
+                  ? { ...subtask, completed: !subtask.completed }
+                  : subtask
+              )
+            }
+          : task
+      );
 
-    // Vérifier si toutes les sous-tâches sont complétées pour mettre à jour l'état de la tâche principale
-    const updatedTask = tasks.find(task => task.id === taskId);
-    if (updatedTask && updatedTask.subtasks.length > 0) {
-      const allSubtasksCompleted = updatedTask.subtasks.every(subtask => subtask.completed);
-      if (allSubtasksCompleted && !updatedTask.completed) {
-        toggleTask(taskId);
+      // Vérifier si toutes les sous-tâches sont complétées pour mettre à jour l'état de la tâche principale
+      const updatedTask = updatedTasks.find(task => task.id === taskId);
+      if (updatedTask && updatedTask.subtasks.length > 0) {
+        const allSubtasksCompleted = updatedTask.subtasks.every(subtask => subtask.completed);
+        if (allSubtasksCompleted && !updatedTask.completed) {
+          updatedTask.completed = true;
+        }
       }
-    }
-  };
 
-  const addSubtask = (taskId, subtask) => {
+      notifySubscribers('subtaskToggled', { 
+        taskId, 
+        subtaskId, 
+        tasks: updatedTasks 
+      });
+      
+      return updatedTasks;
+    });
+  }, [notifySubscribers]);
+
+  const updateTaskStatus = useCallback((taskId, newStatus) => {
+    setTasks(prevTasks => {
+      const updatedTasks = prevTasks.map(task =>
+        task.id === taskId
+          ? { ...task, status: newStatus }
+          : task
+      );
+      notifySubscribers('taskStatusUpdated', { taskId, newStatus, tasks: updatedTasks });
+      return updatedTasks;
+    });
+  }, [notifySubscribers]);
+
+  const editTask = useCallback((taskId, updatedTask) => {
+    setTasks(prevTasks => {
+      const updatedTasks = prevTasks.map(task =>
+        task.id === taskId
+          ? { 
+              ...task, 
+              ...updatedTask,
+              completed: updatedTask.status === 'completed',
+              deadline: updatedTask.deadline ? moment(updatedTask.deadline) : null,
+              duration: updatedTask.duration || task.duration || 25,
+              subtasks: updatedTask.subtasks || task.subtasks || [],
+            }
+          : task
+      );
+      notifySubscribers('taskEdited', { taskId, updatedTask, tasks: updatedTasks });
+      return updatedTasks;
+    });
+  }, [notifySubscribers]);
+
+  const deleteTask = useCallback((taskId) => {
+    setTasks(prevTasks => {
+      const updatedTasks = prevTasks.filter(task => task.id !== taskId);
+      notifySubscribers('taskDeleted', { taskId, tasks: updatedTasks });
+      return updatedTasks;
+    });
+  }, [notifySubscribers]);
+
+  const updateSettings = useCallback((newSettings) => {
+    setSettings(prev => {
+      const updatedSettings = { ...prev, ...newSettings };
+      notifySubscribers('settingsUpdated', updatedSettings);
+      return updatedSettings;
+    });
+  }, [notifySubscribers]);
+
+  const addSubtask = useCallback((taskId, subtask) => {
     const newSubtask = {
       ...subtask,
       id: Date.now().toString(),
       completed: false,
     };
 
-    setTasks(prevTasks => prevTasks.map(task =>
-      task.id === taskId
-        ? { 
-            ...task, 
-            subtasks: [...(task.subtasks || []), newSubtask] 
-          }
-        : task
-    ));
+    setTasks(prevTasks => {
+      const updatedTasks = prevTasks.map(task =>
+        task.id === taskId
+          ? { 
+              ...task, 
+              subtasks: [...(task.subtasks || []), newSubtask] 
+            }
+          : task
+      );
+      notifySubscribers('subtaskAdded', { taskId, subtask: newSubtask, tasks: updatedTasks });
+      return updatedTasks;
+    });
 
     return newSubtask;
-  };
-
-  const updateSubtask = (taskId, subtaskId, updatedSubtask) => {
-    setTasks(prevTasks => prevTasks.map(task =>
-      task.id === taskId
-        ? { 
-            ...task, 
-            subtasks: task.subtasks.map(subtask => 
-              subtask.id === subtaskId 
-                ? { ...subtask, ...updatedSubtask }
-                : subtask
-            )
-          }
-        : task
-    ));
-  };
-
-  const deleteSubtask = (taskId, subtaskId) => {
-    setTasks(prevTasks => prevTasks.map(task =>
-      task.id === taskId
-        ? { 
-            ...task, 
-            subtasks: task.subtasks.filter(subtask => subtask.id !== subtaskId)
-          }
-        : task
-    ));
-  };
-
-  const updateTaskStatus = (taskId, newStatus) => {
-    setTasks(prevTasks => prevTasks.map(task =>
-      task.id === taskId
-        ? { ...task, status: newStatus }
-        : task
-    ));
-  };
-
-  const editTask = (taskId, updatedTask) => {
-    setTasks(prevTasks => prevTasks.map(task =>
-      task.id === taskId
-        ? { 
-            ...task, 
-            ...updatedTask,
-            completed: updatedTask.status === 'completed',
-            deadline: updatedTask.deadline ? moment(updatedTask.deadline) : null,
-            duration: updatedTask.duration || task.duration || 25,
-            subtasks: updatedTask.subtasks || task.subtasks || [],
-          }
-        : task
-    ));
-  };
-
-  const deleteTask = (taskId) => {
-    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-  };
-
-  const updateSettings = (newSettings) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
-  };
-
-  const toggleDarkMode = () => {
-    setSettings(prev => ({
-      ...prev,
-      darkMode: !prev.darkMode
-    }));
-  };
-
-  const resetApp = () => {
-    setTasks([]);
-    setSettings(initialSettings);
-    localStorage.removeItem('tasks');
-    localStorage.removeItem('settings');
-  };
+  }, [notifySubscribers]);
 
   const contextValue = {
     tasks,
@@ -215,12 +234,9 @@ const AppContext = ({ children }) => {
     deleteTask,
     settings,
     updateSettings,
-    toggleDarkMode,
-    resetApp,
     addSubtask,
-    updateSubtask,
-    deleteSubtask,
     toggleSubtask,
+    subscribe
   };
 
   return (

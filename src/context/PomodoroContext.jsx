@@ -1,27 +1,71 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import moment from 'moment';
 import { message } from 'antd';
+import { useAppContext } from './AppContext';
 
 export const PomodoroContext = createContext();
 
 export const PomodoroProvider = ({ children }) => {
+  const { tasks, settings } = useAppContext();
+  
+  // Subscribers pour les mises à jour entre les composants
+  const [subscribers, setSubscribers] = useState([]);
+  
+  // Souscrire aux changements de données
+  const subscribe = useCallback((callback) => {
+    setSubscribers(prev => [...prev, callback]);
+    
+    // Retourne la fonction pour se désabonner
+    return () => {
+      setSubscribers(prev => prev.filter(cb => cb !== callback));
+    };
+  }, []);
+  
+  // Notifier tous les abonnés d'un changement
+  const notifySubscribers = useCallback((type, data) => {
+    subscribers.forEach(callback => callback(type, data));
+  }, [subscribers]);
+
+  // Charger les données du localStorage au démarrage
   const [activeTask, setActiveTask] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
-  const [isRunning, setIsRunning] = useState(false);
-  const [sessionStartTime, setSessionStartTime] = useState(null);
-  const [taskTimeSpent, setTaskTimeSpent] = useState({});
-  const [taskProgress, setTaskProgress] = useState({});
-  const [taskProductivity, setTaskProductivity] = useState({});
-  const [taskStepDescriptions, setTaskStepDescriptions] = useState({});
-  const [currentStep, setCurrentStep] = useState(1);
-  const [timerInterval, setTimerInterval] = useState(null);
+  const [timerMode, setTimerMode] = useState('work');
+  const [timeLeft, setTimeLeft] = useState(settings.workTime * 60);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [sessionCount, setSessionCount] = useState(0);
+  
+  const [taskTimeSpent, setTaskTimeSpent] = useState(() => {
+    const saved = localStorage.getItem('taskTimeSpent');
+    return saved ? JSON.parse(saved) : {};
+  });
+  
+  const [taskProgress, setTaskProgress] = useState(() => {
+    const saved = localStorage.getItem('taskProgress');
+    return saved ? JSON.parse(saved) : {};
+  });
+  
+  const [taskProductivity, setTaskProductivity] = useState(() => {
+    const saved = localStorage.getItem('taskProductivity');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // Fonctions pour les sons
+  const playStartSound = () => {
+    message.success('Timer started!');
+  };
+
+  const playPauseSound = () => {
+    message.info('Timer paused');
+  };
+
+  const playCompleteSound = () => {
+    message.success('Timer completed!');
+  };
 
   // Load saved data from localStorage
   useEffect(() => {
     const savedTimeSpent = localStorage.getItem('taskTimeSpent');
     const savedProgress = localStorage.getItem('taskProgress');
     const savedProductivity = localStorage.getItem('taskProductivity');
-    const savedStepDescriptions = localStorage.getItem('taskStepDescriptions');
     if (savedTimeSpent) {
       setTaskTimeSpent(JSON.parse(savedTimeSpent));
     }
@@ -31,9 +75,6 @@ export const PomodoroProvider = ({ children }) => {
     if (savedProductivity) {
       setTaskProductivity(JSON.parse(savedProductivity));
     }
-    if (savedStepDescriptions) {
-      setTaskStepDescriptions(JSON.parse(savedStepDescriptions));
-    }
   }, []);
 
   // Save data to localStorage whenever it changes
@@ -41,181 +82,183 @@ export const PomodoroProvider = ({ children }) => {
     localStorage.setItem('taskTimeSpent', JSON.stringify(taskTimeSpent));
     localStorage.setItem('taskProgress', JSON.stringify(taskProgress));
     localStorage.setItem('taskProductivity', JSON.stringify(taskProductivity));
-    localStorage.setItem('taskStepDescriptions', JSON.stringify(taskStepDescriptions));
-  }, [taskTimeSpent, taskProgress, taskProductivity, taskStepDescriptions]);
+  }, [taskTimeSpent, taskProgress, taskProductivity]);
 
   // Timer effect
   useEffect(() => {
-    if (isRunning && timeLeft > 0) {
-      const interval = setInterval(() => {
+    let timer;
+    
+    if (timerRunning && timeLeft > 0) {
+      timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
-            clearInterval(interval);
-            handlePomodoroComplete();
+            clearInterval(timer);
+            playCompleteSound();
+            handleTimerComplete();
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
-      setTimerInterval(interval);
-    } else if (!isRunning && timerInterval) {
-      clearInterval(timerInterval);
-      setTimerInterval(null);
     }
-
+    
     return () => {
-      if (timerInterval) {
-        clearInterval(timerInterval);
-      }
+      if (timer) clearInterval(timer);
     };
-  }, [isRunning, timeLeft]);
+  }, [timerRunning, timeLeft]);
 
-  const startPomodoro = (task) => {
+  // Sauvegarder les données de suivi dans localStorage
+  useEffect(() => {
+    localStorage.setItem('taskTimeSpent', JSON.stringify(taskTimeSpent));
+    notifySubscribers('taskTimeSpent', taskTimeSpent);
+  }, [taskTimeSpent, notifySubscribers]);
+  
+  useEffect(() => {
+    localStorage.setItem('taskProgress', JSON.stringify(taskProgress));
+    notifySubscribers('taskProgress', taskProgress);
+  }, [taskProgress, notifySubscribers]);
+  
+  useEffect(() => {
+    localStorage.setItem('taskProductivity', JSON.stringify(taskProductivity));
+    notifySubscribers('taskProductivity', taskProductivity);
+  }, [taskProductivity, notifySubscribers]);
+
+  // Mettre à jour le temps restant lorsque les paramètres changent
+  useEffect(() => {
+    if (!timerRunning) {
+      if (timerMode === 'work') {
+        setTimeLeft(settings.workTime * 60);
+      } else {
+        setTimeLeft(settings.breakTime * 60);
+      }
+    }
+  }, [settings.workTime, settings.breakTime, timerMode, timerRunning]);
+
+  const startTimer = useCallback((taskId) => {
+    const task = tasks.find(t => t.id === taskId);
     if (task) {
       setActiveTask(task);
-      setTimeLeft(25 * 60);
-      setIsRunning(true);
-      setSessionStartTime(moment());
-      setCurrentStep(1);
-      message.success(`Started Pomodoro for task: ${task.name}`);
+      setTimerMode('work');
+      setTimeLeft(settings.workTime * 60);
+      setTimerRunning(true);
+      playStartSound();
+      notifySubscribers('timerStarted', { taskId, task });
     }
-  };
+  }, [tasks, settings.workTime, notifySubscribers]);
 
-  const pausePomodoro = () => {
-    setIsRunning(false);
-    message.info('Pomodoro paused');
-  };
+  const pauseTimer = useCallback(() => {
+    setTimerRunning(false);
+    playPauseSound();
+    notifySubscribers('timerPaused', { taskId: activeTask?.id });
+  }, [activeTask, notifySubscribers]);
 
-  const resumePomodoro = () => {
-    setIsRunning(true);
-    message.success('Pomodoro resumed');
-  };
+  const resumeTimer = useCallback(() => {
+    setTimerRunning(true);
+    playStartSound();
+    notifySubscribers('timerResumed', { taskId: activeTask?.id });
+  }, [activeTask, notifySubscribers]);
 
-  const stopPomodoro = (progress, description) => {
-    if (activeTask && sessionStartTime) {
-      const timeSpent = moment().diff(sessionStartTime, 'minutes');
-      const taskId = activeTask.id;
+  const resetTimer = useCallback(() => {
+    const duration = timerMode === 'work' ? settings.workTime : settings.breakTime;
+    setTimeLeft(duration * 60);
+    setTimerRunning(false);
+    notifySubscribers('timerReset', { taskId: activeTask?.id });
+  }, [timerMode, settings, activeTask, notifySubscribers]);
+
+  const skipTimer = useCallback(() => {
+    handleTimerComplete();
+    notifySubscribers('timerSkipped', { taskId: activeTask?.id });
+  }, [activeTask, notifySubscribers]);
+
+  const handleTimerComplete = useCallback(() => {
+    setTimerRunning(false);
+    
+    if (timerMode === 'work') {
+      // Si on termine un cycle de travail, comptabiliser le temps passé
+      if (activeTask) {
+        // Mettre à jour le temps passé sur la tâche
+        setTaskTimeSpent(prev => {
+          const taskData = prev[activeTask.id] || { total: 0, sessions: [] };
+          const session = {
+            date: new Date().toISOString(),
+            duration: settings.workTime,
+          };
+          
+          return {
+            ...prev,
+            [activeTask.id]: {
+              total: taskData.total + settings.workTime,
+              sessions: [...taskData.sessions || [], session],
+            }
+          };
+        });
+        
+        // Calculer la progression (simulé pour l'exemple)
+        const progressPercent = Math.min(100, Math.floor(Math.random() * 30) + 70); // Entre 70 et 100%
+        
+        setTaskProgress(prev => {
+          const sessionId = `session_${Date.now()}`;
+          return {
+            ...prev,
+            [activeTask.id]: {
+              ...(prev[activeTask.id] || {}),
+              [sessionId]: progressPercent
+            }
+          };
+        });
+        
+        // Calculer la productivité (simulé pour l'exemple)
+        const productivity = Math.min(100, Math.floor(Math.random() * 40) + 60); // Entre 60 et 100%
+        
+        setTaskProductivity(prev => {
+          const taskData = prev[activeTask.id] || { sessions: [], average: 0 };
+          const sessions = [...taskData.sessions || [], productivity];
+          const average = Math.round(sessions.reduce((sum, val) => sum + val, 0) / sessions.length);
+          
+          return {
+            ...prev,
+            [activeTask.id]: {
+              sessions,
+              average
+            }
+          };
+        });
+      }
       
-      // Update time spent
-      setTaskTimeSpent(prev => ({
-        ...prev,
-        [taskId]: {
-          ...prev[taskId],
-          [`step${currentStep}`]: (prev[taskId]?.[`step${currentStep}`] || 0) + timeSpent,
-          total: (prev[taskId]?.total || 0) + timeSpent
-        }
-      }));
-
-      // Update progress and description
-      const progressValue = progress || 50;
-      setTaskProgress(prev => ({
-        ...prev,
-        [taskId]: {
-          ...prev[taskId],
-          [`step${currentStep}`]: progressValue
-        }
-      }));
-
-      // Save step description
-      setTaskStepDescriptions(prev => ({
-        ...prev,
-        [taskId]: {
-          ...prev[taskId],
-          [`step${currentStep}`]: description || ''
-        }
-      }));
-
-      // Calculate productivity score
-      const productivityScore = calculateProductivityScore(timeSpent, progressValue);
-      setTaskProductivity(prev => ({
-        ...prev,
-        [taskId]: {
-          ...prev[taskId],
-          [`step${currentStep}`]: productivityScore,
-          average: calculateAverageProductivity(prev[taskId], productivityScore)
-        }
-      }));
-
-      message.success(`Progress saved for step ${currentStep}`);
-    }
-    resetPomodoro();
-  };
-
-  const calculateProductivityScore = (timeSpent, progress) => {
-    // Simple productivity calculation based on time spent and progress
-    const baseScore = 100;
-    const timeFactor = Math.min(1, 25 / Math.max(1, timeSpent)); // 25 minutes is ideal, avoid division by zero
-    const progressFactor = progress / 100; // Convert progress to 0-1 scale
-    return Math.round(baseScore * timeFactor * progressFactor);
-  };
-
-  const calculateAverageProductivity = (taskProductivity, newScore) => {
-    if (!taskProductivity) return newScore;
-    const scores = Object.values(taskProductivity)
-      .filter(score => typeof score === 'number')
-      .concat(newScore);
-    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-  };
-
-  const resetPomodoro = () => {
-    setActiveTask(null);
-    setTimeLeft(25 * 60);
-    setIsRunning(false);
-    setSessionStartTime(null);
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      setTimerInterval(null);
-    }
-  };
-
-  const handlePomodoroComplete = () => {
-    if (activeTask) {
-      const timeSpent = 25; // 25 minutes for a complete Pomodoro
-      const taskId = activeTask.id;
+      // Passer au mode pause
+      setTimerMode('break');
+      setTimeLeft(settings.breakTime * 60);
+      setSessionCount(prev => prev + 1);
       
-      setTaskTimeSpent(prev => ({
-        ...prev,
-        [taskId]: {
-          ...prev[taskId],
-          [`step${currentStep}`]: (prev[taskId]?.[`step${currentStep}`] || 0) + timeSpent,
-          total: (prev[taskId]?.total || 0) + timeSpent
-        }
-      }));
-
-      // Calculate productivity for completed Pomodoro
-      const progressValue = 100; // Assume 100% progress for completed Pomodoro
-      const description = "Completed Pomodoro session"; // Default description for completed sessions
-      const productivityScore = calculateProductivityScore(timeSpent, progressValue);
+      // Si notifications activées
+      if (settings.notifications) {
+        message.success(`Vous avez terminé une session de travail de ${settings.workTime} minutes!`);
+      }
       
-      setTaskProgress(prev => ({
-        ...prev,
-        [taskId]: {
-          ...prev[taskId],
-          [`step${currentStep}`]: progressValue
-        }
-      }));
-
-      setTaskStepDescriptions(prev => ({
-        ...prev,
-        [taskId]: {
-          ...prev[taskId],
-          [`step${currentStep}`]: description
-        }
-      }));
-
-      setTaskProductivity(prev => ({
-        ...prev,
-        [taskId]: {
-          ...prev[taskId],
-          [`step${currentStep}`]: productivityScore,
-          average: calculateAverageProductivity(prev[taskId], productivityScore)
-        }
-      }));
-
-      message.success('Pomodoro completed successfully!');
+      // Redémarrer automatiquement le timer pour la pause
+      setTimerRunning(true);
+      notifySubscribers('workSessionCompleted', { 
+        taskId: activeTask?.id, 
+        duration: settings.workTime 
+      });
+    } else {
+      // Fin de la pause, revenir au mode travail
+      setTimerMode('work');
+      setTimeLeft(settings.workTime * 60);
+      
+      // Si notifications activées
+      if (settings.notifications) {
+        message.info(`La pause de ${settings.breakTime} minutes est terminée!`);
+      }
+      
+      // Le timer ne redémarre pas automatiquement après une pause
+      setTimerRunning(false);
+      notifySubscribers('breakSessionCompleted', { 
+        taskId: activeTask?.id, 
+        duration: settings.breakTime 
+      });
     }
-    resetPomodoro();
-  };
+  }, [timerMode, activeTask, settings, notifySubscribers]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -235,44 +278,29 @@ export const PomodoroProvider = ({ children }) => {
     return taskProductivity[taskId] || { average: 0 };
   };
 
-  const getTaskStepDescription = (taskId, step) => {
-    return taskStepDescriptions[taskId]?.[`step${step}`] || '';
-  };
-
-  const nextStep = () => {
-    setCurrentStep(prev => prev + 1);
-    message.info(`Moved to step ${currentStep + 1}`);
-  };
-
-  const previousStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(prev => Math.max(1, prev - 1));
-      message.info(`Moved to step ${Math.max(1, currentStep - 1)}`);
-    }
+  const value = {
+    activeTask,
+    timerMode,
+    timeLeft,
+    timerRunning,
+    sessionCount,
+    taskTimeSpent,
+    taskProgress,
+    taskProductivity,
+    startTimer,
+    pauseTimer,
+    resumeTimer,
+    resetTimer,
+    skipTimer,
+    subscribe,
+    formatTime,
+    getTaskTimeSpent,
+    getTaskProgress,
+    getTaskProductivity
   };
 
   return (
-    <PomodoroContext.Provider value={{
-      activeTask,
-      timeLeft,
-      isRunning,
-      currentStep,
-      taskTimeSpent,
-      taskProgress,
-      taskProductivity,
-      taskStepDescriptions,
-      startPomodoro,
-      pausePomodoro,
-      resumePomodoro,
-      stopPomodoro,
-      formatTime,
-      getTaskTimeSpent,
-      getTaskProgress,
-      getTaskProductivity,
-      getTaskStepDescription,
-      nextStep,
-      previousStep
-    }}>
+    <PomodoroContext.Provider value={value}>
       {children}
     </PomodoroContext.Provider>
   );

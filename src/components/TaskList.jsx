@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message, Collapse, Tag, Typography, Segmented, Progress, Checkbox } from 'antd';
+import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message, Collapse, Tag, Typography, Segmented, Progress, Checkbox, Popconfirm } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined, ClockCircleOutlined, RobotOutlined, UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,17 +12,32 @@ import './TaskItem.css';
 
 const { Option } = Select;
 const { Panel } = Collapse;
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 const TaskList = () => {
   const { tasks, addTask, editTask, deleteTask, updateTaskStatus, toggleSubtask } = useAppContext();
-  const { activeTask, startPomodoro, stopPomodoro, isRunning, getTaskTimeSpent, getTaskProgress, timeLeft, taskProductivity } = usePomodoro();
+  const { 
+    activeTask, 
+    startTimer, 
+    pauseTimer, 
+    resumeTimer,
+    timeLeft, 
+    timerRunning,
+    taskTimeSpent,
+    taskProgress,
+    taskProductivity,
+    formatTime,
+    getTaskTimeSpent,
+    getTaskProgress,
+    subscribe
+  } = usePomodoro();
   const [isNewTaskModalVisible, setIsNewTaskModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
   const [aiSortedTasks, setAiSortedTasks] = useState([]);
   const [useSortedTasks, setUseSortedTasks] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'kanban'
+  const [localTasks, setLocalTasks] = useState([]);
 
   const CATEGORIES = [
     { value: 'work', label: '💼 Work', emoji: '💼' },
@@ -37,6 +52,18 @@ const TaskList = () => {
     { value: 'in_progress', label: '🔧 In Progress', emoji: '🔧' },
     { value: 'completed', label: '✅ Completed', emoji: '✅' }
   ];
+
+  // Subscribe to Pomodoro context updates
+  useEffect(() => {
+    setLocalTasks(tasks);
+    
+    const unsubscribe = subscribe(() => {
+      setLocalTasks([...tasks]);
+    });
+    
+    // Clean up subscription when component unmounts
+    return () => unsubscribe();
+  }, [tasks, subscribe]);
 
   // Classifier l'ordre des tâches en utilisant l'IA
   useEffect(() => {
@@ -165,9 +192,9 @@ const TaskList = () => {
 
   const handleStartPomodoro = (task) => {
     if (activeTask && activeTask.id === task.id) {
-      stopPomodoro(0, "Timer stopped");
+      pauseTimer();
     } else {
-      startPomodoro(task);
+      startTimer(task.id);
     }
   };
 
@@ -253,12 +280,6 @@ const TaskList = () => {
     return STATUSES.find(s => s.value === status)?.emoji || '⏳';
   };
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
-
   // Rendu de la liste des tâches ou de la vue Kanban en fonction du mode sélectionné
   const renderTasksView = () => {
     if (viewMode === 'kanban') {
@@ -285,53 +306,49 @@ const TaskList = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <List.Item>
-                <Card 
-                  style={{ 
-                    width: '100%',
-                    marginBottom: '24px',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
-                    borderRadius: '12px'
-                  }}
-                  extra={
-                    <Space size="middle">
-                      <Button 
-                        type="text" 
-                        icon={<EditOutlined />} 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          showModal(task);
-                        }}
-                        style={{ height: '40px', width: '40px' }}
-                      />
-                      <Button 
-                        type="text" 
-                        danger 
-                        icon={<DeleteOutlined />} 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleDelete(task.id);
-                        }}
-                        style={{ height: '40px', width: '40px' }}
-                      />
-                      <Button
-                        type={activeTask && activeTask.id === task.id ? "primary" : "default"}
-                        icon={<PlayCircleOutlined />}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleStartPomodoro(task);
-                        }}
-                        style={{ height: '40px', width: 'auto', padding: '0 16px' }}
-                      >
-                        {activeTask && activeTask.id === task.id && isRunning 
-                          ? `${formatTime(timeLeft)} left` 
-                          : "Start"}
-                      </Button>
-                    </Space>
-                  }
+              <List.Item
+                style={{ 
+                  padding: '12px',
+                  backgroundColor: activeTask && activeTask.id === task.id ? '#f0f5ff' : 'transparent',
+                  borderRadius: '4px'
+                }}
+                actions={[
+                  <Button 
+                    icon={<PlayCircleOutlined />} 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleStartPomodoro(task);
+                    }}
+                    disabled={activeTask && activeTask.id === task.id}
+                    type={activeTask && activeTask.id === task.id ? 'default' : 'primary'}
+                  >
+                    {activeTask && activeTask.id === task.id && timerRunning 
+                      ? `${formatTime(timeLeft)} left` 
+                      : "Start"}
+                  </Button>,
+                  <Button 
+                    icon={<EditOutlined />} 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      showModal(task);
+                    }}
+                  />,
+                  <Popconfirm
+                    title="Are you sure you want to delete this task?"
+                    onConfirm={() => handleDelete(task.id)}
+                    okText="Yes"
+                    cancelText="No"
+                  >
+                    <Button 
+                      danger 
+                      icon={<DeleteOutlined />} 
+                    />
+                  </Popconfirm>
+                ]}
+              >
+                <List.Item.Meta
                   title={
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0' }}>
                       <span style={{ fontSize: '18px', fontWeight: 500 }}>{task.name}</span>
@@ -343,60 +360,63 @@ const TaskList = () => {
                       </Space>
                     </div>
                   }
-                >
-                  <div style={{ padding: '8px 0', fontSize: '15px' }}>
-                    <p style={{ marginBottom: '20px' }}>{task.description}</p>
-                    
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
-                      <div>
-                        <ClockCircleOutlined style={{ marginRight: '8px' }} />
-                        {task.deadline ? moment(task.deadline).format('MMM Do, YYYY') : 'No deadline'}
-                      </div>
-                      <div>
-                        <Tag>{getCategoryEmoji(task.category)} {task.category.replace('_', ' ')}</Tag>
-                      </div>
-                    </div>
-                    
-                    {/* Barre de progression des sous-tâches */}
-                    {task.subtasks && task.subtasks.length > 0 && (
+                  description={
+                    <>
                       <div style={{ marginBottom: '20px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <Text strong>Progression:</Text>
-                          <Text>{calculateProgress(task)}%</Text>
+                        <p>{task.description}</p>
+                        
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+                          <div>
+                            <ClockCircleOutlined style={{ marginRight: '8px' }} />
+                            {task.deadline ? moment(task.deadline).format('MMM Do, YYYY') : 'No deadline'}
+                          </div>
+                          <div>
+                            <Tag>{getCategoryEmoji(task.category)} {task.category.replace('_', ' ')}</Tag>
+                          </div>
                         </div>
-                        <Progress 
-                          percent={calculateProgress(task)} 
-                          status={calculateProgress(task) === 100 ? 'success' : 'active'} 
-                          size="default"
-                          strokeColor={{
-                            '0%': '#108ee9',
-                            '100%': '#87d068',
-                          }}
-                        />
-                        <div style={{ marginTop: '12px' }}>
-                          {task.subtasks.map(subtask => (
-                            <div key={subtask.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                              <Checkbox 
-                                checked={subtask.completed} 
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  toggleSubtask(task.id, subtask.id);
-                                }}
-                                style={{ marginRight: '8px' }}
-                              />
-                              <span className={subtask.completed ? 'text-gray-400 line-through' : ''}>
-                                {subtask.name}
-                              </span>
+                        
+                        {/* Barre de progression des sous-tâches */}
+                        {task.subtasks && task.subtasks.length > 0 && (
+                          <div style={{ marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                              <Text strong>Progression:</Text>
+                              <Text>{calculateProgress(task)}%</Text>
                             </div>
-                          ))}
-                        </div>
+                            <Progress 
+                              percent={calculateProgress(task)} 
+                              status={calculateProgress(task) === 100 ? 'success' : 'active'} 
+                              size="default"
+                              strokeColor={{
+                                '0%': '#108ee9',
+                                '100%': '#87d068',
+                              }}
+                            />
+                            <div style={{ marginTop: '12px' }}>
+                              {task.subtasks.map(subtask => (
+                                <div key={subtask.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                                  <Checkbox 
+                                    checked={subtask.completed} 
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      toggleSubtask(task.id, subtask.id);
+                                    }}
+                                    style={{ marginRight: '8px' }}
+                                  />
+                                  <span className={subtask.completed ? 'text-gray-400 line-through' : ''}>
+                                    {subtask.name}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {renderTaskProgress(task)}
                       </div>
-                    )}
-                    
-                    {renderTaskProgress(task)}
-                  </div>
-                </Card>
+                    </>
+                  }
+                />
               </List.Item>
             </motion.div>
           )}
