@@ -18,15 +18,15 @@ const ProductivityStats = ({ taskId }) => {
   };
 
   return (
-    <Card title="Productivity Statistics" style={{ marginBottom: 16 }}>
+    <Card title="Statistiques de productivité" style={{ marginBottom: 16 }}>
       <Space direction="vertical" style={{ width: '100%' }}>
         <div>
-          <Text strong>Total Time Spent: </Text>
+          <Text strong>Temps total passé : </Text>
           <Text>{formatTime(timeSpent.total || 0)}</Text>
         </div>
 
         <div>
-          <Text strong>Average Productivity: </Text>
+          <Text strong>Productivité moyenne : </Text>
           <Progress
             percent={productivity.average || 0}
             size="small"
@@ -35,7 +35,7 @@ const ProductivityStats = ({ taskId }) => {
         </div>
 
         <List
-          header={<Text strong>Step-by-Step Progress</Text>}
+          header={<Text strong>Progression étape par étape</Text>}
           dataSource={Object.entries(progress)}
           renderItem={([step, progressValue]) => {
             const stepTime = timeSpent[step] || 0;
@@ -55,7 +55,7 @@ const ProductivityStats = ({ taskId }) => {
                     />
                   </div>
                   <div>
-                    <Text type="secondary">Time: {formatTime(stepTime)}</Text>
+                    <Text type="secondary">Temps : {formatTime(stepTime)}</Text>
                     <Progress
                       percent={stepProductivity}
                       size="small"

@@ -405,7 +405,10 @@ const Analysis = () => {
           {Object.entries(classifiedTasks).map(([category, tasks]) => (
             <div key={category} style={{ marginBottom: 16 }}>
               <Title level={4}>
-                {getCategoryIcon(category)} {category.charAt(0).toUpperCase() + category.slice(1)} Tasks
+                {getCategoryIcon(category)} {category === 'urgent' ? 'Urgent' : 
+                                                   category === 'important' ? 'Important' : 
+                                                   category === 'routine' ? 'Routine' : 
+                                                   category === 'optional' ? 'Optionnel' : category.charAt(0).toUpperCase() + category.slice(1)} Tâches
                 <Tag color={getCategoryColor(category)} style={{ marginLeft: 8 }}>
                   {tasks.length}
                 </Tag>
@@ -441,7 +444,7 @@ const Analysis = () => {
                   )}
                 />
               ) : (
-                <Empty description={`No ${category} tasks found`} />
+                <Empty description={`Aucune tâche ${category} trouvée`} />
               )}
             </div>
           ))}
@@ -465,17 +468,17 @@ const Analysis = () => {
                     color={schedule.productivity >= 70 ? 'green' : 'blue'}
                   >
                     <Text strong>{schedule.time}</Text> - 
-                    <Text> {schedule.productivity}% productivity</Text>
+                    <Text> {schedule.productivity}% de productivité</Text>
                     <div>
                       <Text type="secondary">
-                        Suggested session: {schedule.duration} minutes
+                        Session suggérée : {schedule.duration} minutes
                       </Text>
                     </div>
                   </Timeline.Item>
                 ))}
               </Timeline>
             ) : (
-              <Empty description="Not enough data to determine peak hours" />
+              <Empty description="Pas assez de données pour déterminer les heures de pointe" />
             )}
           </div>
           
@@ -575,7 +578,10 @@ const Analysis = () => {
                         }
                       />
                       <div style={{ marginTop: 8 }}>
-                        <Text strong>{category.charAt(0).toUpperCase() + category.slice(1)}</Text>
+                        <Text strong>{category === 'urgent' ? 'Urgent' : 
+                                           category === 'important' ? 'Important' : 
+                                           category === 'routine' ? 'Routine' : 
+                                           category === 'optional' ? 'Optionnel' : category.charAt(0).toUpperCase() + category.slice(1)}</Text>
                       </div>
                     </div>
                   ))}

@@ -49,7 +49,7 @@ const App = () => {
     {
       key: 'settings',
       icon: <SettingOutlined />,
-      label: 'Settings',
+      label: 'Paramètres',
     },
   ];
 
