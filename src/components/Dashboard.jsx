@@ -233,6 +233,16 @@ const Dashboard = () => {
     toggleSubtask(taskId, subtaskId);
   };
 
+  // Calculer le pourcentage de progression basé sur les sous-tâches complétées
+  const calculateTaskProgress = (task) => {
+    if (!task.subtasks || task.subtasks.length === 0) {
+      return task.completed ? 100 : 0;
+    }
+    
+    const completedSubtasks = task.subtasks.filter(subtask => subtask.completed).length;
+    return Math.round((completedSubtasks / task.subtasks.length) * 100);
+  };
+
   // Calculer le nombre total de sous-tâches et de sous-tâches complétées
   const getSubtaskStats = () => {
     let total = 0;
@@ -336,14 +346,31 @@ const Dashboard = () => {
       {
         title: 'Progress',
         key: 'progress',
-        render: (_, record) => (
-          taskProgress[record.key] ? (
+        render: (_, record) => {
+          // Utiliser la progression calculée à partir des sous-tâches s'il y en a
+          if (record.subtasks && record.subtasks.length > 0) {
+            const percent = calculateTaskProgress(record);
+            return (
+              <Progress 
+                percent={percent} 
+                size="small"
+                status={percent === 100 ? 'success' : 'active'}
+                strokeColor={{
+                  '0%': '#108ee9',
+                  '100%': '#87d068',
+                }}
+              />
+            );
+          }
+          
+          // Sinon utiliser les données de progression du Pomodoro si disponibles
+          return taskProgress[record.key] ? (
             <Progress
               percent={Math.round(Object.values(taskProgress[record.key]).reduce((a, b) => a + b, 0) / Object.keys(taskProgress[record.key]).length)}
               size="small"
             />
-          ) : <Progress percent={0} size="small" />
-        ),
+          ) : <Progress percent={0} size="small" />;
+        },
       },
       ...(useSortedTasks ? [{
         title: 'AI Score',
@@ -618,7 +645,18 @@ const Dashboard = () => {
                         Deadline: {moment(task.deadline).format('YYYY-MM-DD')}
                       </Text>
                     )}
-                    {taskProgress[task.id] && (
+                    {/* Afficher la progression basée sur les sous-tâches si présentes */}
+                    {task.subtasks && task.subtasks.length > 0 ? (
+                      <Progress
+                        percent={calculateTaskProgress(task)}
+                        size="small"
+                        status={calculateTaskProgress(task) === 100 ? 'success' : 'active'}
+                        strokeColor={{
+                          '0%': '#108ee9',
+                          '100%': '#87d068',
+                        }}
+                      />
+                    ) : taskProgress[task.id] && (
                       <Progress
                         percent={Object.values(taskProgress[task.id]).reduce((a, b) => a + b, 0) / Object.keys(taskProgress[task.id]).length}
                         size="small"

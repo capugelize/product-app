@@ -1,14 +1,37 @@
-import { Modal, Form, Input, Select, DatePicker, ColorPicker, Switch, Button, Space } from 'antd';
+import { Modal, Form, Input, Select, DatePicker, Button, Space } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useAppContext } from '../context/AppContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import moment from 'moment';
 
 const { Option } = Select;
 
-const NewTaskModal = ({ visible, onCancel, onOk, initialValues }) => {
+const NewTaskModal = ({ visible, onCancel, onOk, editingTask }) => {
   const [form] = Form.useForm();
   const { settings } = useAppContext();
-  const [subtasks, setSubtasks] = useState(initialValues?.subtasks || []);
+  const [subtasks, setSubtasks] = useState([]);
+
+  // Mise à jour des sous-tâches et des valeurs du formulaire quand une tâche est en édition
+  useEffect(() => {
+    if (editingTask) {
+      form.setFieldsValue({
+        name: editingTask.name,
+        description: editingTask.description,
+        status: editingTask.status,
+        priority: editingTask.priority,
+        category: editingTask.category,
+        tags: editingTask.tags,
+        deadline: editingTask.deadline ? moment(editingTask.deadline) : null,
+        color: editingTask.color || "#fbbf24",
+        notificationTime: editingTask.notificationTime || "30"
+      });
+      
+      setSubtasks(editingTask.subtasks || []);
+    } else {
+      form.resetFields();
+      setSubtasks([]);
+    }
+  }, [editingTask, form]);
 
   const handleSubmit = () => {
     form.validateFields().then(values => {
@@ -16,10 +39,11 @@ const NewTaskModal = ({ visible, onCancel, onOk, initialValues }) => {
       const taskWithSubtasks = {
         ...values,
         subtasks: subtasks,
+        id: editingTask?.id  // Conserver l'ID lors de la modification
       };
       onOk(taskWithSubtasks);
-      form.resetFields();
-      setSubtasks([]);
+    }).catch(err => {
+      console.error("Erreur de validation du formulaire:", err);
     });
   };
 
@@ -49,15 +73,26 @@ const NewTaskModal = ({ visible, onCancel, onOk, initialValues }) => {
 
   return (
     <Modal
-      title="Nouvelle tâche"
+      title={editingTask ? "Modifier la tâche" : "Nouvelle tâche"}
       open={visible}
-      onCancel={() => {
+      onCancel={(e) => {
+        if (e) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
         form.resetFields();
         setSubtasks([]);
         onCancel();
       }}
-      onOk={handleSubmit}
+      onOk={(e) => {
+        if (e) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+        handleSubmit();
+      }}
       width={600}
+      maskClosable={false}
       className="dark:bg-gray-800"
     >
       <Form
@@ -65,9 +100,10 @@ const NewTaskModal = ({ visible, onCancel, onOk, initialValues }) => {
         layout="vertical"
         className="dark:text-gray-100"
         initialValues={{
-          notificationTime: "30",
-          recurring: false,
-          ...initialValues
+          status: "not_started",
+          priority: "medium",
+          color: "#fbbf24",
+          notificationTime: "30"
         }}
       >
         <Form.Item
@@ -90,7 +126,7 @@ const NewTaskModal = ({ visible, onCancel, onOk, initialValues }) => {
           label="Couleur"
           initialValue="#fbbf24"
         >
-          <ColorPicker />
+          <Input type="color" style={{ width: '100%', height: '32px' }} />
         </Form.Item>
 
         <Form.Item
@@ -103,6 +139,19 @@ const NewTaskModal = ({ visible, onCancel, onOk, initialValues }) => {
             <Option value="not_started">⏳ Not started</Option>
             <Option value="in_progress">🔧 In progress</Option>
             <Option value="completed">✅ Completed</Option>
+          </Select>
+        </Form.Item>
+
+        <Form.Item
+          name="priority"
+          label="Priorité"
+          initialValue="medium"
+          rules={[{ required: true, message: 'Veuillez sélectionner une priorité' }]}
+        >
+          <Select>
+            <Option value="high">🔴 Haute</Option>
+            <Option value="medium">🟠 Moyenne</Option>
+            <Option value="low">🟢 Basse</Option>
           </Select>
         </Form.Item>
 
@@ -160,34 +209,17 @@ const NewTaskModal = ({ visible, onCancel, onOk, initialValues }) => {
           </Select>
         </Form.Item>
 
-        <Form.Item
-          name="recurring"
-          label="Répétition"
-          valuePropName="checked"
-        >
-          <Switch />
-        </Form.Item>
-
-        {form.getFieldValue('recurring') && (
-          <Form.Item
-            name="recurrenceType"
-            label="Type de répétition"
-          >
-            <Select>
-              <Option value="daily">Quotidien</Option>
-              <Option value="weekly">Hebdomadaire</Option>
-              <Option value="monthly">Mensuel</Option>
-            </Select>
-          </Form.Item>
-        )}
-
         <div className="border-t pt-4 mt-4">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-lg font-medium">Sous-tâches</h3>
             <Button 
               type="primary" 
               icon={<PlusOutlined />} 
-              onClick={addSubtask}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                addSubtask();
+              }}
             >
               Ajouter une sous-tâche
             </Button>
@@ -199,13 +231,21 @@ const NewTaskModal = ({ visible, onCancel, onOk, initialValues }) => {
                 className="flex-grow"
                 placeholder="Nom de la sous-tâche"
                 value={subtask.name}
-                onChange={(e) => updateSubtask(index, e.target.value)}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  updateSubtask(index, e.target.value);
+                }}
+                onClick={(e) => e.stopPropagation()}
               />
               <Button 
                 type="text" 
                 danger
                 icon={<DeleteOutlined />} 
-                onClick={() => removeSubtask(index)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  removeSubtask(index);
+                }}
                 className="ml-2"
               />
             </div>

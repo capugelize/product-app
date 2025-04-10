@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message, Collapse, Tag, Typography, Segmented } from 'antd';
+import { List, Card, Button, Modal, Form, Input, Select, DatePicker, Space, message, Collapse, Tag, Typography, Segmented, Progress, Checkbox } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined, ClockCircleOutlined, RobotOutlined, UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,7 +15,7 @@ const { Panel } = Collapse;
 const { Text } = Typography;
 
 const TaskList = () => {
-  const { tasks, addTask, editTask, deleteTask, updateTaskStatus } = useAppContext();
+  const { tasks, addTask, editTask, deleteTask, updateTaskStatus, toggleSubtask } = useAppContext();
   const { activeTask, startPomodoro, stopPomodoro, isRunning, getTaskTimeSpent, getTaskProgress, timeLeft, taskProductivity } = usePomodoro();
   const [isNewTaskModalVisible, setIsNewTaskModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -222,6 +222,16 @@ const TaskList = () => {
     }
   };
 
+  // Calculer le pourcentage de progression basé sur les sous-tâches complétées
+  const calculateProgress = (task) => {
+    if (!task.subtasks || task.subtasks.length === 0) {
+      return task.completed ? 100 : 0;
+    }
+    
+    const completedSubtasks = task.subtasks.filter(subtask => subtask.completed).length;
+    return Math.round((completedSubtasks / task.subtasks.length) * 100);
+  };
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'high':
@@ -288,20 +298,32 @@ const TaskList = () => {
                       <Button 
                         type="text" 
                         icon={<EditOutlined />} 
-                        onClick={() => showModal(task)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          showModal(task);
+                        }}
                         style={{ height: '40px', width: '40px' }}
                       />
                       <Button 
                         type="text" 
                         danger 
                         icon={<DeleteOutlined />} 
-                        onClick={() => handleDelete(task.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDelete(task.id);
+                        }}
                         style={{ height: '40px', width: '40px' }}
                       />
                       <Button
                         type={activeTask && activeTask.id === task.id ? "primary" : "default"}
                         icon={<PlayCircleOutlined />}
-                        onClick={() => handleStartPomodoro(task)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleStartPomodoro(task);
+                        }}
                         style={{ height: '40px', width: 'auto', padding: '0 16px' }}
                       >
                         {activeTask && activeTask.id === task.id && isRunning 
@@ -312,10 +334,12 @@ const TaskList = () => {
                   }
                   title={
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0' }}>
-                      <span style={{ fontSize: '18px', fontWeight: 500 }}>{task.title}</span>
+                      <span style={{ fontSize: '18px', fontWeight: 500 }}>{task.name}</span>
                       <Space size={12} style={{ marginLeft: 'auto' }}>
                         <Tag color={getStatusColor(task.status)}>{getStatusEmoji(task.status)} {task.status.replace('_', ' ')}</Tag>
-                        <Tag color={getPriorityColor(task.priority)}>Priority: {task.priority}</Tag>
+                        <Tag color={getPriorityColor(task.priority)}>
+                          Priorité: {task.priority === 'high' ? '🔴 Haute' : task.priority === 'medium' ? '🟠 Moyenne' : '🟢 Basse'}
+                        </Tag>
                       </Space>
                     </div>
                   }
@@ -332,6 +356,43 @@ const TaskList = () => {
                         <Tag>{getCategoryEmoji(task.category)} {task.category.replace('_', ' ')}</Tag>
                       </div>
                     </div>
+                    
+                    {/* Barre de progression des sous-tâches */}
+                    {task.subtasks && task.subtasks.length > 0 && (
+                      <div style={{ marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <Text strong>Progression:</Text>
+                          <Text>{calculateProgress(task)}%</Text>
+                        </div>
+                        <Progress 
+                          percent={calculateProgress(task)} 
+                          status={calculateProgress(task) === 100 ? 'success' : 'active'} 
+                          size="default"
+                          strokeColor={{
+                            '0%': '#108ee9',
+                            '100%': '#87d068',
+                          }}
+                        />
+                        <div style={{ marginTop: '12px' }}>
+                          {task.subtasks.map(subtask => (
+                            <div key={subtask.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                              <Checkbox 
+                                checked={subtask.completed} 
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  toggleSubtask(task.id, subtask.id);
+                                }}
+                                style={{ marginRight: '8px' }}
+                              />
+                              <span className={subtask.completed ? 'text-gray-400 line-through' : ''}>
+                                {subtask.name}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     
                     {renderTaskProgress(task)}
                   </div>

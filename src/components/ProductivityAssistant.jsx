@@ -59,6 +59,7 @@ const ProductivityAssistant = () => {
 
       schedule.push({
         id: task.id,
+        name: task.name,
         title: task.name,
         start: currentTime.format('HH:mm'),
         end: endTime.format('HH:mm'),
@@ -78,7 +79,7 @@ const ProductivityAssistant = () => {
   const handleEditTask = (task) => {
     setEditingTask(task);
     editForm.setFieldsValue({
-      name: task.title,
+      name: task.name,
       priority: task.priority,
       duration: task.duration,
       deadline: task.deadline ? moment(task.deadline) : null,
@@ -120,7 +121,7 @@ const ProductivityAssistant = () => {
             <List.Item>
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                  <Text strong>{item.title}</Text>
+                  <Text strong>{item.name || item.title}</Text>
                   <Space>
                     <Button type="link" onClick={() => handleEditTask(item)}>
                       Modifier

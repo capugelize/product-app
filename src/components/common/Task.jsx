@@ -21,7 +21,7 @@ const Task = ({ task, onToggle, onEdit, onDelete, onStatusChange }) => {
             checked={task.completed}
             onChange={() => onToggle(task.id)}
           >
-            <Text delete={task.completed}>{task.title}</Text>
+            <Text delete={task.completed}>{task.name}</Text>
           </Checkbox>
           <Space>
             <TaskStatus
