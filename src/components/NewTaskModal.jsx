@@ -28,10 +28,21 @@ const NewTaskModal = ({ visible, onCancel, onOk, editingTask }) => {
       
       setSubtasks(editingTask.subtasks || []);
     } else {
-      form.resetFields();
+      // Définir les valeurs par défaut pour un nouveau formulaire
+      form.setFieldsValue({
+        name: '',
+        description: '',
+        status: 'not_started',
+        priority: 'medium',
+        category: '',
+        tags: [],
+        deadline: null,
+        color: "#fbbf24",
+        notificationTime: "30"
+      });
       setSubtasks([]);
     }
-  }, [editingTask, form]);
+  }, [editingTask, form, visible]);
 
   const handleSubmit = () => {
     form.validateFields().then(values => {
@@ -47,7 +58,11 @@ const NewTaskModal = ({ visible, onCancel, onOk, editingTask }) => {
     });
   };
 
-  const addSubtask = () => {
+  const addSubtask = (e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     const newSubtask = {
       id: Date.now().toString(),
       name: '',
@@ -80,8 +95,10 @@ const NewTaskModal = ({ visible, onCancel, onOk, editingTask }) => {
           e.stopPropagation();
           e.preventDefault();
         }
+        // Réinitialiser complètement le formulaire
         form.resetFields();
         setSubtasks([]);
+        // Appeler le callback parent
         onCancel();
       }}
       onOk={(e) => {
@@ -99,12 +116,6 @@ const NewTaskModal = ({ visible, onCancel, onOk, editingTask }) => {
         form={form}
         layout="vertical"
         className="dark:text-gray-100"
-        initialValues={{
-          status: "not_started",
-          priority: "medium",
-          color: "#fbbf24",
-          notificationTime: "30"
-        }}
       >
         <Form.Item
           name="name"
@@ -124,7 +135,6 @@ const NewTaskModal = ({ visible, onCancel, onOk, editingTask }) => {
         <Form.Item
           name="color"
           label="Couleur"
-          initialValue="#fbbf24"
         >
           <Input type="color" style={{ width: '100%', height: '32px' }} />
         </Form.Item>
@@ -132,7 +142,6 @@ const NewTaskModal = ({ visible, onCancel, onOk, editingTask }) => {
         <Form.Item
           name="status"
           label="Statut"
-          initialValue="not_started"
           rules={[{ required: true, message: 'Veuillez sélectionner un statut' }]}
         >
           <Select>
@@ -145,7 +154,6 @@ const NewTaskModal = ({ visible, onCancel, onOk, editingTask }) => {
         <Form.Item
           name="priority"
           label="Priorité"
-          initialValue="medium"
           rules={[{ required: true, message: 'Veuillez sélectionner une priorité' }]}
         >
           <Select>
@@ -218,7 +226,7 @@ const NewTaskModal = ({ visible, onCancel, onOk, editingTask }) => {
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                addSubtask();
+                addSubtask(e);
               }}
             >
               Ajouter une sous-tâche

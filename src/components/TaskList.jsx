@@ -167,6 +167,7 @@ const TaskList = () => {
   };
 
   const handleOk = (values) => {
+    // Préparation des données de la tâche
     const taskData = {
       ...values,
       deadline: values.deadline ? values.deadline.format() : null,
@@ -174,7 +175,15 @@ const TaskList = () => {
     };
 
     if (editingTask) {
-      editTask(editingTask.id, taskData);
+      // Conserver les propriétés existantes si elles ne sont pas dans les valeurs soumises
+      const updatedTask = {
+        ...editingTask,
+        ...taskData,
+        // S'assurer que les sous-tâches ne sont pas perdues
+        subtasks: taskData.subtasks || editingTask.subtasks || []
+      };
+      
+      editTask(editingTask.id, updatedTask);
       message.success('Tâche mise à jour avec succès');
     } else {
       addTask(taskData);
@@ -351,6 +360,16 @@ const TaskList = () => {
                 <List.Item.Meta
                   title={
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0' }}>
+                      <Checkbox
+                        checked={task.status === 'completed'}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          const newStatus = e.target.checked ? 'completed' : 'in_progress';
+                          updateTaskStatus(task.id, newStatus);
+                        }}
+                        style={{ marginRight: '8px' }}
+                      />
                       <span style={{ fontSize: '18px', fontWeight: 500 }}>{task.name}</span>
                       <Space size={12} style={{ marginLeft: 'auto' }}>
                         <Tag color={getStatusColor(task.status)}>{getStatusEmoji(task.status)} {task.status.replace('_', ' ')}</Tag>

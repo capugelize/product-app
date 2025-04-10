@@ -138,10 +138,16 @@ const AppContext = ({ children }) => {
 
       // Vérifier si toutes les sous-tâches sont complétées pour mettre à jour l'état de la tâche principale
       const updatedTask = updatedTasks.find(task => task.id === taskId);
-      if (updatedTask && updatedTask.subtasks.length > 0) {
+      if (updatedTask && updatedTask.subtasks && updatedTask.subtasks.length > 0) {
         const allSubtasksCompleted = updatedTask.subtasks.every(subtask => subtask.completed);
-        if (allSubtasksCompleted && !updatedTask.completed) {
+        // Mettre à jour à la fois 'completed' et 'status'
+        if (allSubtasksCompleted) {
           updatedTask.completed = true;
+          updatedTask.status = 'completed';
+        } else {
+          // Si au moins une sous-tâche est active, mettre le statut à 'in_progress'
+          updatedTask.completed = false;
+          updatedTask.status = 'in_progress';
         }
       }
 

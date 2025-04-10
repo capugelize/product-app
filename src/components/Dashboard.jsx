@@ -206,7 +206,14 @@ const Dashboard = () => {
     };
 
     if (editingTask) {
-      editTask(editingTask.id, taskData);
+      // Préserver les sous-tâches si elles ne sont pas dans les valeurs soumises
+      const updatedTask = {
+        ...editingTask,
+        ...taskData,
+        subtasks: taskData.subtasks || editingTask.subtasks || []
+      };
+      
+      editTask(editingTask.id, updatedTask);
       message.success('Tâche mise à jour avec succès');
     } else {
       addTask(taskData);
@@ -226,7 +233,22 @@ const Dashboard = () => {
   };
 
   const handleToggleTask = (taskId) => {
-    toggleTask(taskId);
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      // Mettre à jour le statut en fonction de l'état de la case à cocher
+      const newStatus = !task.completed ? 'completed' : 'in_progress';
+      
+      // Mise à jour dans le contexte
+      toggleTask(taskId);
+      
+      // Mettre à jour le statut également
+      const updatedTask = {
+        ...task,
+        status: newStatus
+      };
+      
+      editTask(taskId, updatedTask);
+    }
   };
 
   const handleToggleSubtask = (taskId, subtaskId) => {
@@ -282,7 +304,7 @@ const Dashboard = () => {
         width: 60,
         render: (_, record) => (
           <Checkbox
-            checked={record.completed}
+            checked={record.status === 'completed'}
             onChange={() => handleToggleTask(record.key)}
           />
         ),
@@ -602,6 +624,18 @@ const Dashboard = () => {
               <Col span={8} key={task.id}>
                 <Card 
                   size="small"
+                  title={
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <Checkbox 
+                        checked={task.status === 'completed'} 
+                        onChange={() => handleToggleTask(task.id)}
+                        style={{ marginRight: '8px' }}
+                      />
+                      <span className={task.status === 'completed' ? 'line-through text-gray-400' : ''}>
+                        {task.name}
+                      </span>
+                    </div>
+                  }
                   style={{ 
                     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)', 
                     borderRadius: '8px',
@@ -620,7 +654,6 @@ const Dashboard = () => {
                   ]}
                 >
                   <Space direction="vertical">
-                    <Text strong>{task.name}</Text>
                     <Space>
                       <Tag color={
                         task.priority === 'high' ? 'red' :
@@ -647,15 +680,31 @@ const Dashboard = () => {
                     )}
                     {/* Afficher la progression basée sur les sous-tâches si présentes */}
                     {task.subtasks && task.subtasks.length > 0 ? (
-                      <Progress
-                        percent={calculateTaskProgress(task)}
-                        size="small"
-                        status={calculateTaskProgress(task) === 100 ? 'success' : 'active'}
-                        strokeColor={{
-                          '0%': '#108ee9',
-                          '100%': '#87d068',
-                        }}
-                      />
+                      <>
+                        <Progress
+                          percent={calculateTaskProgress(task)}
+                          size="small"
+                          status={calculateTaskProgress(task) === 100 ? 'success' : 'active'}
+                          strokeColor={{
+                            '0%': '#108ee9',
+                            '100%': '#87d068',
+                          }}
+                        />
+                        <div style={{ marginTop: '8px' }}>
+                          {task.subtasks.map(subtask => (
+                            <div key={subtask.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                              <Checkbox 
+                                checked={subtask.completed} 
+                                onChange={() => handleToggleSubtask(task.id, subtask.id)}
+                                style={{ marginRight: '4px' }}
+                              />
+                              <span className={`text-xs ${subtask.completed ? 'line-through text-gray-400' : ''}`}>
+                                {subtask.name}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     ) : taskProgress[task.id] && (
                       <Progress
                         percent={Object.values(taskProgress[task.id]).reduce((a, b) => a + b, 0) / Object.keys(taskProgress[task.id]).length}
@@ -675,7 +724,7 @@ const Dashboard = () => {
         visible={isModalVisible}
         onCancel={handleCancel}
         onOk={handleSave}
-        initialValues={editingTask}
+        editingTask={editingTask}
       />
     </div>
   );
