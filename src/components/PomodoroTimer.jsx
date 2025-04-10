@@ -80,30 +80,41 @@ const PomodoroTimer = () => {
   const progressPercent = (timeLeft / totalTime) * 100;
 
   return (
-    <div className="pomodoro-timer-container">
+    <div className="pomodoro-timer-container" style={{ padding: '24px 0' }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Card title="Pomodoro Timer" style={{ maxWidth: 800, margin: '0 auto' }}>
-          <Space direction="vertical" align="center" style={{ width: '100%' }}>
-            <Title level={3}>
+        <Card 
+          title={<Title level={3} style={{ margin: 0, textAlign: 'center' }}>Pomodoro Timer</Title>} 
+          style={{ 
+            maxWidth: 850, 
+            margin: '0 auto',
+            borderRadius: '12px',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)'
+          }}
+          bodyStyle={{ padding: '32px 24px' }}
+        >
+          <Space direction="vertical" align="center" style={{ width: '100%', gap: '24px' }}>
+            <Title level={3} style={{ marginTop: 0, marginBottom: '8px', textAlign: 'center' }}>
               {activeTask ? `Working on: ${activeTask.name}` : 'Select a task to start'}
             </Title>
             
             {activeTask && (
-              <Space direction="vertical" align="center" style={{ marginBottom: 16 }}>
-                <Text strong>Step {currentStep}</Text>
-                <Space>
+              <Space direction="vertical" align="center" style={{ marginBottom: '24px' }}>
+                <Text strong style={{ fontSize: '16px', marginBottom: '12px' }}>Step {currentStep}</Text>
+                <Space size="middle">
                   <Button 
                     icon={<ArrowLeftOutlined />} 
                     onClick={previousStep}
                     disabled={currentStep === 1}
+                    size="large"
                   />
                   <Button 
                     icon={<ArrowRightOutlined />} 
                     onClick={nextStep}
+                    size="large"
                   />
                 </Space>
               </Space>
@@ -112,16 +123,24 @@ const PomodoroTimer = () => {
             <Progress
               type="circle"
               percent={progressPercent}
-              format={() => formatTime(timeLeft)}
+              format={() => (
+                <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <span style={{ fontSize: '36px', fontWeight: 'bold' }}>{formatTime(timeLeft)}</span>
+                  {isRunning && <Text type="secondary" style={{ marginTop: '8px' }}>Running</Text>}
+                </div>
+              )}
               strokeColor="#1890ff"
-              size={200}
+              size={240}
+              strokeWidth={6}
             />
-            <Space size="large" style={{ marginTop: 24 }}>
+
+            <Space size="large" style={{ marginTop: '32px' }}>
               {!activeTask ? (
                 <Button
                   type="primary"
                   size="large"
                   onClick={handleSelectTask}
+                  style={{ height: '46px', padding: '0 28px', fontSize: '16px' }}
                 >
                   Select Task
                 </Button>
@@ -132,6 +151,7 @@ const PomodoroTimer = () => {
                     icon={isRunning ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
                     onClick={toggleTimer}
                     size="large"
+                    style={{ height: '46px', padding: '0 28px', fontSize: '16px' }}
                   >
                     {isRunning ? 'Pause' : 'Start'}
                   </Button>
@@ -139,6 +159,7 @@ const PomodoroTimer = () => {
                     type="default"
                     onClick={handleStopTimer}
                     size="large"
+                    style={{ height: '46px', padding: '0 28px', fontSize: '16px' }}
                   >
                     Stop & Save Progress
                   </Button>
@@ -148,6 +169,7 @@ const PomodoroTimer = () => {
                 icon={<SettingOutlined />}
                 onClick={() => setIsSettingsVisible(true)}
                 size="large"
+                style={{ height: '46px', width: '46px' }}
               />
             </Space>
           </Space>
@@ -163,6 +185,7 @@ const PomodoroTimer = () => {
           form.resetFields();
           setIsSettingsVisible(false);
         }}
+        bodyStyle={{ padding: '24px' }}
       >
         <Form
           form={form}
@@ -177,7 +200,7 @@ const PomodoroTimer = () => {
             label="Work Time (minutes)"
             rules={[{ required: true, message: 'Please enter work time' }]}
           >
-            <InputNumber min={1} max={60} />
+            <InputNumber min={1} max={60} style={{ width: '100%' }} />
           </Form.Item>
 
           <Form.Item
@@ -185,7 +208,7 @@ const PomodoroTimer = () => {
             label="Break Time (minutes)"
             rules={[{ required: true, message: 'Please enter break time' }]}
           >
-            <InputNumber min={1} max={60} />
+            <InputNumber min={1} max={60} style={{ width: '100%' }} />
           </Form.Item>
         </Form>
       </Modal>
@@ -199,6 +222,7 @@ const PomodoroTimer = () => {
           setIsProgressModalVisible(false);
           progressForm.resetFields();
         }}
+        bodyStyle={{ padding: '24px' }}
       >
         <Form
           form={progressForm}
@@ -233,6 +257,7 @@ const PomodoroTimer = () => {
           setIsTaskSelectVisible(false);
           taskForm.resetFields();
         }}
+        bodyStyle={{ padding: '24px' }}
       >
         <Form
           form={taskForm}
@@ -243,13 +268,12 @@ const PomodoroTimer = () => {
             label="Choose a Task"
             rules={[{ required: true, message: 'Please select a task' }]}
           >
-            <Select placeholder="Select a task">
+            <Select placeholder="Select a task" size="large" style={{ width: '100%' }}>
               {tasks
                 .filter(task => task.status !== 'completed')
                 .map(task => (
                   <Option key={task.id} value={task.id}>{task.name}</Option>
-                ))
-              }
+                ))}
             </Select>
           </Form.Item>
         </Form>

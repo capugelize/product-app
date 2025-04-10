@@ -1,19 +1,20 @@
 .task-item {
   position: relative;
-  margin-bottom: 16px;
-  border-radius: 8px;
+  margin-bottom: 32px;
+  border-radius: 12px;
   transition: all 0.3s ease;
   cursor: grab;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .task-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 .task-item.active-pomodoro {
   border: 2px solid #1890ff;
-  box-shadow: 0 0 10px rgba(24, 144, 255, 0.3);
+  box-shadow: 0 0 18px rgba(24, 144, 255, 0.3);
   background-color: rgba(24, 144, 255, 0.05);
 }
 
@@ -21,18 +22,27 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 .task-item .ant-card-body {
-  padding: 12px;
+  padding: 24px;
+}
+
+.task-item .ant-card-head {
+  padding: 16px 24px;
+  min-height: 60px;
+}
+
+.task-item .ant-card-head-title {
+  padding: 16px 0;
 }
 
 .active-timer {
   color: #1890ff !important;
   background-color: rgba(24, 144, 255, 0.1) !important;
   border-radius: 50% !important;
-  padding: 8px !important;
+  padding: 12px !important;
   animation: pulse 2s infinite;
 }
 
@@ -55,15 +65,15 @@
   position: relative;
   background-color: #1890ff;
   color: white;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 1em;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 1.1em;
   font-weight: bold;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 24px;
   width: fit-content;
 }
 
@@ -87,17 +97,48 @@
 }
 
 .timer-display .timer-icon {
-  font-size: 1.2em;
+  font-size: 1.4em;
 }
 
 .timer-display .timer-text {
   font-family: monospace;
-  min-width: 60px;
+  min-width: 70px;
   text-align: center;
 }
 
 .timer-display .task-name {
-  margin-left: 8px;
+  margin-left: 12px;
   font-weight: normal;
   opacity: 0.9;
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.task-description {
+  margin: 20px 0;
+  line-height: 1.7;
+  font-size: 15px;
+}
+
+.task-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.task-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.task-tag {
+  padding: 6px 12px;
+  border-radius: 16px;
 } 

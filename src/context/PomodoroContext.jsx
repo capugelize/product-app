@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import moment from 'moment';
+import { message } from 'antd';
 
 export const PomodoroContext = createContext();
 
@@ -76,15 +77,18 @@ export const PomodoroProvider = ({ children }) => {
       setIsRunning(true);
       setSessionStartTime(moment());
       setCurrentStep(1);
+      message.success(`Started Pomodoro for task: ${task.name}`);
     }
   };
 
   const pausePomodoro = () => {
     setIsRunning(false);
+    message.info('Pomodoro paused');
   };
 
   const resumePomodoro = () => {
     setIsRunning(true);
+    message.success('Pomodoro resumed');
   };
 
   const stopPomodoro = (progress, description) => {
@@ -131,6 +135,8 @@ export const PomodoroProvider = ({ children }) => {
           average: calculateAverageProductivity(prev[taskId], productivityScore)
         }
       }));
+
+      message.success(`Progress saved for step ${currentStep}`);
     }
     resetPomodoro();
   };
@@ -138,7 +144,7 @@ export const PomodoroProvider = ({ children }) => {
   const calculateProductivityScore = (timeSpent, progress) => {
     // Simple productivity calculation based on time spent and progress
     const baseScore = 100;
-    const timeFactor = Math.min(1, 25 / timeSpent); // 25 minutes is ideal
+    const timeFactor = Math.min(1, 25 / Math.max(1, timeSpent)); // 25 minutes is ideal, avoid division by zero
     const progressFactor = progress / 100; // Convert progress to 0-1 scale
     return Math.round(baseScore * timeFactor * progressFactor);
   };
@@ -205,6 +211,8 @@ export const PomodoroProvider = ({ children }) => {
           average: calculateAverageProductivity(prev[taskId], productivityScore)
         }
       }));
+
+      message.success('Pomodoro completed successfully!');
     }
     resetPomodoro();
   };
@@ -233,10 +241,14 @@ export const PomodoroProvider = ({ children }) => {
 
   const nextStep = () => {
     setCurrentStep(prev => prev + 1);
+    message.info(`Moved to step ${currentStep + 1}`);
   };
 
   const previousStep = () => {
-    setCurrentStep(prev => Math.max(1, prev - 1));
+    if (currentStep > 1) {
+      setCurrentStep(prev => Math.max(1, prev - 1));
+      message.info(`Moved to step ${Math.max(1, currentStep - 1)}`);
+    }
   };
 
   return (

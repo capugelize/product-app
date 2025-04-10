@@ -425,13 +425,15 @@ const Dashboard = () => {
 
   return (
     <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-8">
         <Title level={2}>Dashboard</Title>
         <Space>
           <Button 
             icon={<RobotOutlined />}
             onClick={toggleSortMode}
             type={useSortedTasks ? "primary" : "default"}
+            size="large"
+            style={{ height: '44px' }}
           >
             {useSortedTasks ? "Tri AI activé" : "Tri standard"}
           </Button>
@@ -439,15 +441,23 @@ const Dashboard = () => {
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => showModal()}
+            size="large"
+            style={{ height: '44px', padding: '0 24px' }}
           >
             Ajouter une tâche
           </Button>
         </Space>
       </div>
 
-      <Row gutter={[16, 16]} className="mb-4">
+      <div style={{ marginBottom: '50px' }}></div>
+
+      <Row gutter={[24, 24]} className="mb-6">
         <Col xs={24} sm={12} md={6}>
-          <Card>
+          <Card style={{ 
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)', 
+            borderRadius: '12px',
+            height: '100%'
+          }}>
             <Title level={4}>Progression globale</Title>
             <Progress 
               type="circle" 
@@ -463,7 +473,11 @@ const Dashboard = () => {
         </Col>
         
         <Col xs={24} sm={12} md={6}>
-          <Card>
+          <Card style={{ 
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)', 
+            borderRadius: '12px',
+            height: '100%'
+          }}>
             <Title level={4}>Sous-tâches</Title>
             <Progress 
               type="circle" 
@@ -480,7 +494,14 @@ const Dashboard = () => {
 
         {/* Time Tracking */}
         <Col span={8}>
-          <Card title="Time Tracking">
+          <Card 
+            title="Time Tracking" 
+            style={{ 
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)', 
+              borderRadius: '12px',
+              height: '100%'
+            }}
+          >
             <Space direction="vertical" style={{ width: '100%' }}>
               <div>
                 <Text strong>Total Time Spent: </Text>
@@ -503,7 +524,14 @@ const Dashboard = () => {
 
         {/* Priority Overview */}
         <Col span={8}>
-          <Card title="Priority Overview">
+          <Card 
+            title="Priority Overview" 
+            style={{ 
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)', 
+              borderRadius: '12px',
+              height: '100%'
+            }}
+          >
             <Space direction="vertical" style={{ width: '100%' }}>
               <div>
                 <Text strong>High Priority: </Text>
@@ -522,18 +550,36 @@ const Dashboard = () => {
         </Col>
       </Row>
 
-      <Card title="Mes tâches" className="mb-4">
+      <Card 
+        title="Mes tâches" 
+        className="mb-6" 
+        style={{ 
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)', 
+          borderRadius: '12px' 
+        }}
+      >
         {renderTasksTable()}
       </Card>
 
       {/* Recent Tasks */}
       <Col span={24}>
-        <Card title="Recent Tasks">
-          <Row gutter={[16, 16]}>
+        <Card 
+          title="Recent Tasks" 
+          style={{ 
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)', 
+            borderRadius: '12px' 
+          }}
+        >
+          <Row gutter={[24, 24]}>
             {recentTasks.map(task => (
               <Col span={8} key={task.id}>
                 <Card 
                   size="small"
+                  style={{ 
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)', 
+                    borderRadius: '8px',
+                    height: '100%'
+                  }}
                   actions={[
                     <EditOutlined key="edit" onClick={() => showModal(task)} />,
                     <Popconfirm

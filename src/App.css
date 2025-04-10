@@ -4,9 +4,12 @@
   --text-color: rgba(0, 0, 0, 0.85);
   --text-color-secondary: rgba(0, 0, 0, 0.45);
   --border-color: #d9d9d9;
-  --background-color: #f0f2f5;
+  --background-color: #f8fafc;  /* Lighter background for more airy feel */
   --sidebar-width: 250px;
-  --header-height: 64px;
+  --header-height: 80px;
+  --card-spacing: 32px;    /* Increased card spacing */
+  --element-spacing: 24px; /* Increased element spacing */
+  --border-radius: 12px;   /* Slightly larger border radius */
 }
 
 /* Dark mode variables */
@@ -50,7 +53,7 @@ body {
 /* Contenu principal */
 .main-content {
   flex: 1;
-  padding: 24px;
+  padding: 40px;  /* Increased padding */
   background-color: var(--background-color);
   min-height: 100%;
   overflow-y: auto;
@@ -64,6 +67,10 @@ body {
   
   .main-container.sidebar-collapsed {
     margin-left: 80px;
+  }
+  
+  .main-content {
+    padding: 24px; /* Adjusted padding for mobile */
   }
 }
 
@@ -122,11 +129,15 @@ body {
 }
 
 .card {
-  padding: 2em;
+  padding: 3em; /* Increased padding */
+  border-radius: var(--border-radius);
+  margin-bottom: var(--card-spacing);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04); /* Lighter, more spread out shadow */
 }
 
 .read-the-docs {
   color: #888;
+  margin: var(--element-spacing) 0;
 }
 
 .app-layout {
@@ -143,10 +154,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 40px; /* Increased padding */
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
+  height: var(--header-height); /* Using the header-height variable */
 }
 
 .dark-mode .app-header {
@@ -164,6 +176,8 @@ body {
 .app-title {
   margin: 0 !important;
   transition: color 0.3s ease;
+  font-weight: 500; /* Medium weight */
+  letter-spacing: 0.3px; /* Slight letter spacing */
 }
 
 .dark-mode .app-title {
@@ -171,8 +185,8 @@ body {
 }
 
 .app-content {
-  padding: 24px;
-  background: #f0f2f5;
+  padding: 40px; /* Increased padding */
+  background: var(--background-color);
   transition: all 0.3s ease;
 }
 
@@ -180,9 +194,21 @@ body {
   background: #141414;
 }
 
+/* Card styles */
 .ant-card {
-  margin-bottom: 16px;
+  margin-bottom: var(--card-spacing);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
   transition: all 0.3s ease;
+}
+
+.ant-card-head {
+  padding: 0 24px; /* Increased padding */
+  border-bottom: 1px solid var(--border-color);
+}
+
+.ant-card-body {
+  padding: 24px; /* Increased padding */
 }
 
 .dark-mode .ant-card {
@@ -191,17 +217,52 @@ body {
 }
 
 .ant-list-item {
-  padding: 12px !important;
+  padding: 16px 24px; /* Increased padding */
   transition: all 0.3s ease;
+  border-radius: var(--border-radius);
+  margin-bottom: 16px; /* Added spacing between list items */
 }
 
 .dark-mode .ant-list-item {
   border-color: #303030;
 }
 
-.ant-tag {
-  margin-right: 0 !important;
-  transition: all 0.3s ease;
+/* Form elements spacing */
+.ant-form-item {
+  margin-bottom: 24px; /* Increased spacing */
+}
+
+/* Button spacing */
+.ant-btn {
+  height: 40px; /* Taller buttons */
+  padding: 0 20px; /* More horizontal padding */
+  border-radius: 8px; /* Rounder buttons */
+}
+
+/* Space between buttons in button groups */
+.ant-space {
+  gap: var(--element-spacing) !important; /* Enforce consistent spacing */
+}
+
+/* Tables */
+.ant-table-thead > tr > th {
+  padding: 16px 24px; /* Increased padding */
+}
+
+.ant-table-tbody > tr > td {
+  padding: 16px 24px; /* Increased padding */
+}
+
+/* Menu items in sidebar */
+.ant-menu-item {
+  height: 50px; /* Taller menu items */
+  line-height: 50px;
+  margin: 4px 0; /* Space between menu items */
+}
+
+/* Tabs */
+.ant-tabs-tab {
+  padding: 12px 24px; /* More padding in tabs */
 }
 
 /* Draggable task styles */

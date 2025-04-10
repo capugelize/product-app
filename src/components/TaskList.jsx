@@ -252,81 +252,150 @@ const TaskList = () => {
   // Rendu de la liste des tâches ou de la vue Kanban en fonction du mode sélectionné
   const renderTasksView = () => {
     if (viewMode === 'kanban') {
-      return (
-        <KanbanView 
-          tasks={tasks}
-          aiSortedTasks={aiSortedTasks}
-          useSortedTasks={useSortedTasks}
-          onEdit={(editTask) => showModal(editTask)}
-          onDelete={handleDelete}
-        />
-      );
+      return <KanbanView tasks={useSortedTasks ? aiSortedTasks : tasks} />;
     }
 
-    // Vue liste par défaut
     return (
-      <AnimatePresence>
-        {(useSortedTasks ? aiSortedTasks : tasks).map(task => (
-          <TaskCard
-            key={task.id}
-            task={task} 
-            onEdit={(editTask) => showModal(editTask)}
-            onDelete={handleDelete}
-            onStatusChange={(newStatus) => updateTaskStatus(task.id, newStatus)}
-          />
-        ))}
-      </AnimatePresence>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        <List
+          grid={{
+            gutter: 32,
+            xs: 1,
+            sm: 1,
+            md: 1,
+            lg: 1,
+            xl: 1,
+            xxl: 1,
+          }}
+          dataSource={useSortedTasks ? aiSortedTasks : tasks}
+          renderItem={(task) => (
+            <motion.div
+              key={task.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <List.Item>
+                <Card 
+                  style={{ 
+                    width: '100%',
+                    marginBottom: '24px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
+                    borderRadius: '12px'
+                  }}
+                  extra={
+                    <Space size="middle">
+                      <Button 
+                        type="text" 
+                        icon={<EditOutlined />} 
+                        onClick={() => showModal(task)}
+                        style={{ height: '40px', width: '40px' }}
+                      />
+                      <Button 
+                        type="text" 
+                        danger 
+                        icon={<DeleteOutlined />} 
+                        onClick={() => handleDelete(task.id)}
+                        style={{ height: '40px', width: '40px' }}
+                      />
+                      <Button
+                        type={activeTask && activeTask.id === task.id ? "primary" : "default"}
+                        icon={<PlayCircleOutlined />}
+                        onClick={() => handleStartPomodoro(task)}
+                        style={{ height: '40px', width: 'auto', padding: '0 16px' }}
+                      >
+                        {activeTask && activeTask.id === task.id && isRunning 
+                          ? `${formatTime(timeLeft)} left` 
+                          : "Start"}
+                      </Button>
+                    </Space>
+                  }
+                  title={
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0' }}>
+                      <span style={{ fontSize: '18px', fontWeight: 500 }}>{task.title}</span>
+                      <Space size={12} style={{ marginLeft: 'auto' }}>
+                        <Tag color={getStatusColor(task.status)}>{getStatusEmoji(task.status)} {task.status.replace('_', ' ')}</Tag>
+                        <Tag color={getPriorityColor(task.priority)}>Priority: {task.priority}</Tag>
+                      </Space>
+                    </div>
+                  }
+                >
+                  <div style={{ padding: '8px 0', fontSize: '15px' }}>
+                    <p style={{ marginBottom: '20px' }}>{task.description}</p>
+                    
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+                      <div>
+                        <ClockCircleOutlined style={{ marginRight: '8px' }} />
+                        {task.deadline ? moment(task.deadline).format('MMM Do, YYYY') : 'No deadline'}
+                      </div>
+                      <div>
+                        <Tag>{getCategoryEmoji(task.category)} {task.category.replace('_', ' ')}</Tag>
+                      </div>
+                    </div>
+                    
+                    {renderTaskProgress(task)}
+                  </div>
+                </Card>
+              </List.Item>
+            </motion.div>
+          )}
+        />
+      </div>
     );
   };
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h2 className="text-2xl font-semibold">Mes Tâches</h2>
-          <p className="text-gray-600 dark:text-gray-400">
-            Gérez vos tâches et projets
-          </p>
-        </div>
-        <div className="flex gap-4 items-center">
-          <Segmented
-            options={[
-              {
-                value: 'list',
-                icon: <UnorderedListOutlined />,
-                label: 'Liste',
-              },
-              {
-                value: 'kanban',
-                icon: <AppstoreOutlined />,
-                label: 'Kanban',
-              },
-            ]}
-            value={viewMode}
-            onChange={setViewMode}
-          />
-          <Button 
-            icon={<RobotOutlined />} 
-            onClick={toggleSortMode} 
-            type={useSortedTasks ? "primary" : "default"}
-            disabled={viewMode === 'kanban'}
-          >
-            {useSortedTasks ? "Tri AI activé" : "Tri standard"}
-          </Button>
+    <div style={{ position: 'relative' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '32px',
+        gap: '24px'
+      }}>
+        <div style={{ display: 'flex', gap: '16px' }}>
           <Button 
             type="primary" 
             icon={<PlusOutlined />} 
-            onClick={() => showModal(null)}
+            onClick={() => showModal()}
+            size="large"
+            style={{ height: '44px', padding: '0 24px' }}
           >
-            Nouvelle tâche
+            New Task
+          </Button>
+          <Button
+            onClick={toggleSortMode}
+            icon={<RobotOutlined />}
+            type={useSortedTasks ? "primary" : "default"}
+            size="large"
+            style={{ height: '44px' }}
+          >
+            {useSortedTasks ? "Using AI Priority" : "Use AI Priority"}
           </Button>
         </div>
+        
+        <Segmented
+          options={[
+            {
+              value: 'list',
+              icon: <UnorderedListOutlined />,
+              label: 'List',
+            },
+            {
+              value: 'kanban',
+              icon: <AppstoreOutlined />,
+              label: 'Kanban',
+            },
+          ]}
+          value={viewMode}
+          onChange={setViewMode}
+          size="large"
+          style={{ background: '#fff', padding: '8px' }}
+        />
       </div>
-
-      {/* Liste des tâches ou vue Kanban selon le mode sélectionné */}
+      
       {renderTasksView()}
-
-      {/* Utiliser le nouveau composant NewTaskModal avec support des sous-tâches */}
+      
       <NewTaskModal
         visible={isNewTaskModalVisible}
         onCancel={() => {
@@ -334,7 +403,7 @@ const TaskList = () => {
           setEditingTask(null);
         }}
         onOk={handleOk}
-        initialValues={editingTask}
+        editingTask={editingTask}
       />
     </div>
   );
