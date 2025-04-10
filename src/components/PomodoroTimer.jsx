@@ -21,7 +21,8 @@ const PomodoroTimer = () => {
     stopPomodoro,
     formatTime,
     nextStep,
-    previousStep
+    previousStep,
+    timerRunning
   } = usePomodoro();
   
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
@@ -32,7 +33,7 @@ const PomodoroTimer = () => {
   const [taskForm] = Form.useForm();
 
   const toggleTimer = () => {
-    if (isRunning) {
+    if (timerRunning) {
       pausePomodoro();
     } else {
       resumePomodoro();
@@ -87,7 +88,7 @@ const PomodoroTimer = () => {
         transition={{ duration: 0.3 }}
       >
         <Card 
-          title={<Title level={3} style={{ margin: 0, textAlign: 'center' }}>Pomodoro Timer</Title>} 
+          title={<Title level={3} style={{ margin: 0, textAlign: 'center' }}>Minuteur Pomodoro</Title>} 
           style={{ 
             maxWidth: 850, 
             margin: '0 auto',
@@ -98,12 +99,12 @@ const PomodoroTimer = () => {
         >
           <Space direction="vertical" align="center" style={{ width: '100%', gap: '24px' }}>
             <Title level={3} style={{ marginTop: 0, marginBottom: '8px', textAlign: 'center' }}>
-              {activeTask ? `Working on: ${activeTask.name}` : 'Select a task to start'}
+              {activeTask ? `Tâche en cours: ${activeTask.name}` : 'Sélectionnez une tâche pour commencer'}
             </Title>
             
             {activeTask && (
               <Space direction="vertical" align="center" style={{ marginBottom: '24px' }}>
-                <Text strong style={{ fontSize: '16px', marginBottom: '12px' }}>Step {currentStep}</Text>
+                <Text strong style={{ fontSize: '16px', marginBottom: '12px' }}>Étape {currentStep}</Text>
                 <Space size="middle">
                   <Button 
                     icon={<ArrowLeftOutlined />} 
@@ -126,7 +127,7 @@ const PomodoroTimer = () => {
               format={() => (
                 <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <span style={{ fontSize: '36px', fontWeight: 'bold' }}>{formatTime(timeLeft)}</span>
-                  {isRunning && <Text type="secondary" style={{ marginTop: '8px' }}>Running</Text>}
+                  {isRunning && <Text type="secondary" style={{ marginTop: '8px' }}>En cours</Text>}
                 </div>
               )}
               strokeColor="#1890ff"
@@ -142,18 +143,18 @@ const PomodoroTimer = () => {
                   onClick={handleSelectTask}
                   style={{ height: '46px', padding: '0 28px', fontSize: '16px' }}
                 >
-                  Select Task
+                  Sélectionner une tâche
                 </Button>
               ) : (
                 <>
                   <Button
                     type="primary"
-                    icon={isRunning ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+                    icon={timerRunning ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
                     onClick={toggleTimer}
                     size="large"
                     style={{ height: '46px', padding: '0 28px', fontSize: '16px' }}
                   >
-                    {isRunning ? 'Pause' : 'Start'}
+                    {timerRunning ? 'Pause' : 'Démarrer'}
                   </Button>
                   <Button
                     type="default"
@@ -161,7 +162,7 @@ const PomodoroTimer = () => {
                     size="large"
                     style={{ height: '46px', padding: '0 28px', fontSize: '16px' }}
                   >
-                    Stop & Save Progress
+                    Arrêter et enregistrer
                   </Button>
                 </>
               )}
@@ -178,7 +179,7 @@ const PomodoroTimer = () => {
         
       {/* Settings Modal */}
       <Modal
-        title="Pomodoro Settings"
+        title="Paramètres du Pomodoro"
         open={isSettingsVisible}
         onOk={handleSettingsOk}
         onCancel={() => {
@@ -197,7 +198,7 @@ const PomodoroTimer = () => {
         >
           <Form.Item
             name="workTime"
-            label="Work Time (minutes)"
+            label="Temps de travail (minutes)"
             rules={[{ required: true, message: 'Please enter work time' }]}
           >
             <InputNumber min={1} max={60} style={{ width: '100%' }} />
@@ -205,7 +206,7 @@ const PomodoroTimer = () => {
 
           <Form.Item
             name="breakTime"
-            label="Break Time (minutes)"
+            label="Temps de pause (minutes)"
             rules={[{ required: true, message: 'Please enter break time' }]}
           >
             <InputNumber min={1} max={60} style={{ width: '100%' }} />
@@ -215,7 +216,7 @@ const PomodoroTimer = () => {
 
       {/* Progress Modal */}
       <Modal
-        title="Save Progress"
+        title="Enregistrer la Progression"
         open={isProgressModalVisible}
         onOk={handleProgressSubmit}
         onCancel={() => {
@@ -228,29 +229,30 @@ const PomodoroTimer = () => {
           form={progressForm}
           layout="vertical"
           initialValues={{
-            progress: 50
+            progress: 50,
+            description: ''
           }}
         >
           <Form.Item
             name="progress"
-            label={`Progress for Step ${currentStep} (%)`}
-            rules={[{ required: true, message: 'Please enter progress percentage' }]}
+            label={`Progression pour l'étape ${currentStep} (%)`}
+            rules={[{ required: true, message: 'Veuillez saisir un pourcentage de progression' }]}
           >
             <InputNumber min={0} max={100} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item
             name="description"
-            label="Detailed Description"
-            rules={[{ required: true, message: 'Please provide a detailed description' }]}
+            label="Description détaillée"
+            rules={[{ required: true, message: 'Veuillez fournir une description détaillée' }]}
           >
-            <Input.TextArea rows={6} placeholder="Provide a detailed description of what you did in this step..." />
+            <Input.TextArea rows={6} placeholder="Décrivez en détail ce que vous avez accompli durant cette étape..." />
           </Form.Item>
         </Form>
       </Modal>
 
       {/* Task Selection Modal */}
       <Modal
-        title="Select a Task"
+        title="Sélectionner une tâche"
         open={isTaskSelectVisible}
         onOk={handleTaskSubmit}
         onCancel={() => {
@@ -265,10 +267,10 @@ const PomodoroTimer = () => {
         >
           <Form.Item
             name="taskId"
-            label="Choose a Task"
-            rules={[{ required: true, message: 'Please select a task' }]}
+            label="Choisir une tâche"
+            rules={[{ required: true, message: 'Veuillez sélectionner une tâche' }]}
           >
-            <Select placeholder="Select a task" size="large" style={{ width: '100%' }}>
+            <Select placeholder="Sélectionner une tâche" size="large" style={{ width: '100%' }}>
               {tasks
                 .filter(task => task.status !== 'completed')
                 .map(task => (

@@ -241,7 +241,7 @@ const Analysis = () => {
 
   const columns = [
     {
-      title: 'Task Name',
+      title: 'Nom de la tâche',
       dataIndex: 'name',
       key: 'name',
       render: (text, record) => (
@@ -257,7 +257,7 @@ const Analysis = () => {
       ),
     },
     {
-      title: 'Status',
+      title: 'Statut',
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
@@ -266,14 +266,14 @@ const Analysis = () => {
           status === 'in_progress' ? 'processing' :
           'default'
         }>
-          {status === 'completed' ? '✅ Completed' :
-           status === 'in_progress' ? '🔧 In Progress' :
-           '⏳ Not Started'}
+          {status === 'completed' ? '✅ Terminé' :
+           status === 'in_progress' ? '🔧 En cours' :
+           '⏳ À faire'}
         </Tag>
       ),
     },
     {
-      title: 'Time Spent',
+      title: 'Temps passé',
       dataIndex: 'timeSpent',
       key: 'timeSpent',
       render: (timeSpent) => (
@@ -290,7 +290,7 @@ const Analysis = () => {
       ),
     },
     {
-      title: 'Progress',
+      title: 'Progression',
       dataIndex: 'progress',
       key: 'progress',
       render: (progress, record) => (
@@ -317,7 +317,7 @@ const Analysis = () => {
       ),
     },
     {
-      title: 'Productivity',
+      title: 'Productivité',
       dataIndex: 'productivity',
       key: 'productivity',
       render: (productivity) => (
@@ -392,11 +392,11 @@ const Analysis = () => {
     };
 
     return (
-      <Card title="AI Task Classification" style={{ marginBottom: 16 }}>
+      <Card title="Classification des tâches IA" style={{ marginBottom: 16 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
           <Alert 
-            message="Task Priority Classification" 
-            description="AI has analyzed your tasks based on priority, deadlines, progress, and productivity patterns to suggest the optimal order." 
+            message="Classification de priorité des tâches" 
+            description="L'IA a analysé vos tâches en fonction de leur priorité, échéances, progression et modèles de productivité pour suggérer un ordre optimal." 
             type="info" 
             showIcon 
             style={{ marginBottom: 16 }}
@@ -432,8 +432,8 @@ const Analysis = () => {
                         title={task.name}
                         description={
                           <Text type="secondary">
-                            {task.category} • {task.status === 'completed' ? 'Completed' : 
-                             task.status === 'in_progress' ? 'In Progress' : 'Not Started'}
+                            {task.category} • {task.status === 'completed' ? 'Terminé' : 
+                             task.status === 'in_progress' ? 'En cours' : 'À faire'}
                           </Text>
                         }
                       />
@@ -453,10 +453,10 @@ const Analysis = () => {
   // Render productivity time analysis card
   const renderProductivityTimeAnalysis = () => {
     return (
-      <Card title="Productivity Time Analysis" style={{ marginBottom: 16 }}>
+      <Card title="Analyse du temps de productivité" style={{ marginBottom: 16 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
           <div>
-            <Title level={4}>Peak Productivity Hours</Title>
+            <Title level={4}>Heures de productivité maximale</Title>
             {productivityAnalysis.peakHours.length > 0 ? (
               <Timeline>
                 {productivityAnalysis.suggestedSchedule.map((schedule, index) => (
@@ -480,9 +480,9 @@ const Analysis = () => {
           </div>
           
           <div>
-            <Title level={4}>Optimal Session Duration</Title>
+            <Title level={4}>Durée optimale de session</Title>
             <Text>
-              Based on your most productive tasks, your optimal work session duration is: 
+              D'après vos tâches les plus productives, votre durée optimale de session de travail est de : 
               <Text strong style={{ marginLeft: 8 }}>
                 {productivityAnalysis.optimalDuration} minutes
               </Text>
@@ -490,9 +490,9 @@ const Analysis = () => {
           </div>
           
           <Alert
-            message="Productivity Insight"
-            description={`You tend to be most productive during ${productivityAnalysis.peakHours.map(h => h < 10 ? `0${h}:00` : `${h}:00`).join(', ')} hours. 
-              Consider scheduling your most important tasks during these times for optimal results.`}
+            message="Aperçu de productivité"
+            description={`Vous avez tendance à être plus productif pendant les heures ${productivityAnalysis.peakHours.map(h => h < 10 ? `0${h}:00` : `${h}:00`).join(', ')}. 
+              Envisagez de planifier vos tâches les plus importantes pendant ces périodes pour des résultats optimaux.`}
             type="info"
             showIcon
           />
@@ -505,8 +505,8 @@ const Analysis = () => {
     <Space direction="vertical" style={{ width: '100%' }}>
       {!hasData && (
         <Alert
-          message="No Analysis Data Available"
-          description="Start using the Pomodoro timer with your tasks to generate analysis data."
+          message="Aucune donnée d'analyse disponible"
+          description="Utilisez le minuteur Pomodoro avec vos tâches pour générer des données d'analyse."
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
@@ -516,14 +516,14 @@ const Analysis = () => {
       {hasData && (
         <>
           <Card>
-            <Title level={3}>Overall Productivity</Title>
+            <Title level={3}>Productivité générale</Title>
             <Progress
               percent={getTotalProductivity()}
               size="large"
               status={getTotalProductivity() >= 70 ? 'success' : getTotalProductivity() >= 40 ? 'normal' : 'exception'}
             />
             <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-              Based on {Object.keys(taskProductivity).length} completed tasks
+              Basé sur {Object.keys(taskProductivity).length} tâches terminées
             </Text>
           </Card>
 
@@ -534,7 +534,7 @@ const Analysis = () => {
           {renderProductivityTimeAnalysis()}
 
           <Tabs defaultActiveKey="1">
-            <TabPane tab="Tasks Overview" key="1">
+            <TabPane tab="Aperçu des tâches" key="1">
               <Table
                 columns={columns}
                 dataSource={data}
@@ -545,22 +545,22 @@ const Analysis = () => {
                 rowClassName={(record) => record.key === activeTaskId ? 'selected-row' : ''}
               />
             </TabPane>
-            <TabPane tab="Detailed Analysis" key="2">
+            <TabPane tab="Analyse détaillée" key="2">
               {activeTaskId ? (
                 <ProductivityStats taskId={activeTaskId} />
               ) : (
                 <Empty
                   description={
                     <Text>
-                      Select a task from the overview to see detailed statistics
+                      Sélectionnez une tâche dans l'aperçu pour voir les statistiques détaillées
                     </Text>
                   }
                 />
               )}
             </TabPane>
-            <TabPane tab="Task Priority Analysis" key="3">
+            <TabPane tab="Analyse de priorité des tâches" key="3">
               <Card>
-                <Title level={4}>Task Priority Distribution</Title>
+                <Title level={4}>Distribution des priorités</Title>
                 <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: 32 }}>
                   {Object.entries(classifiedTasks).map(([category, tasks]) => (
                     <div key={category} style={{ textAlign: 'center' }}>
@@ -581,22 +581,22 @@ const Analysis = () => {
                   ))}
                 </div>
                 <Alert
-                  message="AI Recommendation"
+                  message="Recommandation IA"
                   description={
                     classifiedTasks.urgent.length > 0 
-                      ? "Focus on completing urgent tasks during your peak productivity hours for maximum efficiency."
+                      ? "Concentrez-vous sur les tâches urgentes pendant vos heures de productivité maximale pour une efficacité optimale."
                       : classifiedTasks.important.length > 0
-                      ? "You've handled urgent tasks well. Focus on important tasks next to prevent them from becoming urgent."
-                      : "Great job! Your task management is effective. Consider taking on new challenges or longer-term projects."
+                      ? "Vous avez bien géré les tâches urgentes. Concentrez-vous maintenant sur les tâches importantes pour éviter qu'elles ne deviennent urgentes."
+                      : "Excellent travail ! Votre gestion des tâches est efficace. Envisagez de relever de nouveaux défis ou des projets à plus long terme."
                   }
                   type="info"
                   showIcon
                 />
               </Card>
             </TabPane>
-            <TabPane tab="Productivity Timeline" key="4">
+            <TabPane tab="Évolution de la productivité" key="4">
               <Card>
-                <Title level={4}>Your Productivity Over Time</Title>
+                <Title level={4}>Votre productivité au fil du temps</Title>
                 {Object.keys(productivityAnalysis.productivityByTime).length > 0 ? (
                   <div style={{ height: '300px', display: 'flex', alignItems: 'flex-end' }}>
                     {Object.entries(productivityAnalysis.productivityByTime)
@@ -628,7 +628,7 @@ const Analysis = () => {
                     }
                   </div>
                 ) : (
-                  <Empty description="Not enough data to display productivity timeline" />
+                  <Empty description="Pas assez de données pour afficher l'évolution de la productivité" />
                 )}
               </Card>
             </TabPane>

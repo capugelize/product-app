@@ -12,14 +12,14 @@ const AppHeader = () => {
     {
       key: '1',
       icon: <SettingOutlined />,
-      label: 'Settings',
+      label: 'Paramètres',
     },
     {
       key: '2',
       icon: <BulbOutlined />,
       label: (
         <Space>
-          Dark Mode
+          Mode sombre
           <Switch
             checked={settings.darkMode}
             onChange={(checked) => updateSettings({ darkMode: checked })}
@@ -31,9 +31,9 @@ const AppHeader = () => {
     {
       key: '3',
       icon: <LogoutOutlined />,
-      label: 'Reset App',
+      label: 'Réinitialiser',
       onClick: () => {
-        if (window.confirm('Are you sure you want to delete all your data and reset the app? This action is irreversible.')) {
+        if (window.confirm('Êtes-vous sûr de vouloir supprimer toutes vos données et réinitialiser l\'application ? Cette action est irréversible.')) {
           resetApp();
         }
       },
@@ -44,16 +44,16 @@ const AppHeader = () => {
     <Header className="app-header">
       <div className="header-content">
         <Title level={3} className="app-title">
-          Productivity App
+          Gestionnaire de Productivité
         </Title>
         <Space>
           <Segmented
             value={settings.viewMode}
             onChange={(value) => updateSettings({ viewMode: value })}
             options={[
-              { label: 'Day', value: 'day' },
-              { label: 'Week', value: 'week' },
-              { label: 'Month', value: 'month' },
+              { label: 'Jour', value: 'day' },
+              { label: 'Semaine', value: 'week' },
+              { label: 'Mois', value: 'month' },
             ]}
           />
           <Dropdown

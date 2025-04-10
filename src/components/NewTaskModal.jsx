@@ -145,9 +145,9 @@ const NewTaskModal = ({ visible, onCancel, onOk, editingTask }) => {
           rules={[{ required: true, message: 'Veuillez sélectionner un statut' }]}
         >
           <Select>
-            <Option value="not_started">⏳ Not started</Option>
-            <Option value="in_progress">🔧 In progress</Option>
-            <Option value="completed">✅ Completed</Option>
+            <Option value="not_started">⏳ À faire</Option>
+            <Option value="in_progress">🔧 En cours</Option>
+            <Option value="completed">✅ Terminé</Option>
           </Select>
         </Form.Item>
 
@@ -169,11 +169,11 @@ const NewTaskModal = ({ visible, onCancel, onOk, editingTask }) => {
           rules={[{ required: true, message: 'Veuillez sélectionner une catégorie' }]}
         >
           <Select placeholder="Sélectionnez une catégorie">
-            <Option value="work">💼 Work</Option>
-            <Option value="personal">🏠 Personal</Option>
-            <Option value="study">📚 Study</Option>
-            <Option value="health">💪 Health</Option>
-            <Option value="other">📝 Other</Option>
+            <Option value="work">💼 Travail</Option>
+            <Option value="personal">🏠 Personnel</Option>
+            <Option value="study">📚 Études</Option>
+            <Option value="health">💪 Santé</Option>
+            <Option value="other">📝 Autre</Option>
           </Select>
         </Form.Item>
 

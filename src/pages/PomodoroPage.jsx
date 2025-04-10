@@ -27,28 +27,28 @@ const PomodoroPage = () => {
         <Col span={24}>
           <Card>
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
-              <Title level={2}>Pomodoro Timer</Title>
+              <Title level={2}>Minuteur Pomodoro</Title>
               
               <Select
                 style={{ width: '100%' }}
-                placeholder="Select a task to work on"
+                placeholder="Sélectionnez une tâche"
                 value={activeTask?.id}
                 onChange={handleTaskSelect}
               >
                 {tasks.map(task => (
                   <Option key={task.id} value={task.id}>
-                    {task.name} - {task.status === 'not_started' ? '⏳ Not started' :
-                      task.status === 'in_progress' ? '🔧 In progress' :
-                      task.status === 'completed' ? '✅ Completed' : 'Unknown'}
+                    {task.name} - {task.status === 'not_started' ? '⏳ À faire' :
+                      task.status === 'in_progress' ? '🔧 En cours' :
+                      task.status === 'completed' ? '✅ Terminé' : 'Inconnu'}
                   </Option>
                 ))}
               </Select>
 
               {activeTask && (
                 <div>
-                  <Title level={4}>Current Task: {activeTask.name}</Title>
-                  <p>Status: {activeTask.status}</p>
-                  <p>Priority: {activeTask.priority}</p>
+                  <Title level={4}>Tâche actuelle: {activeTask.name}</Title>
+                  <p>Statut: {activeTask.status}</p>
+                  <p>Priorité: {activeTask.priority}</p>
                 </div>
               )}
             </Space>

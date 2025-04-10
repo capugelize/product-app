@@ -40,17 +40,17 @@ const TaskList = () => {
   const [localTasks, setLocalTasks] = useState([]);
 
   const CATEGORIES = [
-    { value: 'work', label: '💼 Work', emoji: '💼' },
-    { value: 'personal', label: '🏠 Personal', emoji: '🏠' },
-    { value: 'study', label: '📚 Study', emoji: '📚' },
-    { value: 'health', label: '💪 Health', emoji: '💪' },
-    { value: 'other', label: '📝 Other', emoji: '📝' }
+    { value: 'work', label: '💼 Travail', emoji: '💼' },
+    { value: 'personal', label: '🏠 Personnel', emoji: '🏠' },
+    { value: 'study', label: '📚 Études', emoji: '📚' },
+    { value: 'health', label: '💪 Santé', emoji: '💪' },
+    { value: 'other', label: '📝 Autre', emoji: '📝' }
   ];
 
   const STATUSES = [
-    { value: 'not_started', label: '⏳ Not Started', emoji: '⏳' },
-    { value: 'in_progress', label: '🔧 In Progress', emoji: '🔧' },
-    { value: 'completed', label: '✅ Completed', emoji: '✅' }
+    { value: 'not_started', label: '⏳ À faire', emoji: '⏳' },
+    { value: 'in_progress', label: '🔧 En cours', emoji: '🔧' },
+    { value: 'completed', label: '✅ Terminé', emoji: '✅' }
   ];
 
   // Subscribe to Pomodoro context updates
@@ -201,7 +201,11 @@ const TaskList = () => {
 
   const handleStartPomodoro = (task) => {
     if (activeTask && activeTask.id === task.id) {
-      pauseTimer();
+      if (timerRunning) {
+        pauseTimer();
+      } else {
+        resumeTimer();
+      }
     } else {
       startTimer(task.id);
     }
@@ -215,10 +219,10 @@ const TaskList = () => {
 
     return (
       <Collapse>
-        <Panel header="Time Tracking & Progress" key="1">
+        <Panel header="Suivi du temps et progression" key="1">
           <Space direction="vertical" style={{ width: '100%' }}>
             <div>
-              <strong>Total Time Spent:</strong> {timeSpent.total} minutes
+              <strong>Temps total passé :</strong> {timeSpent.total} minutes
             </div>
             {Object.entries(timeSpent)
               .filter(([key]) => key.startsWith('step'))
@@ -230,7 +234,7 @@ const TaskList = () => {
             
             {Object.entries(progress).length > 0 && (
               <div>
-                <strong>Progress:</strong>
+                <strong>Progression :</strong>
                 {Object.entries(progress).map(([pomodoro, value]) => (
                   <Tag key={pomodoro} color={value > 70 ? 'green' : value > 40 ? 'blue' : 'orange'}>
                     {pomodoro}: {value}%
@@ -333,8 +337,8 @@ const TaskList = () => {
                     type={activeTask && activeTask.id === task.id ? 'default' : 'primary'}
                   >
                     {activeTask && activeTask.id === task.id && timerRunning 
-                      ? `${formatTime(timeLeft)} left` 
-                      : "Start"}
+                      ? `${formatTime(timeLeft)} restant` 
+                      : "Démarrer"}
                   </Button>,
                   <Button 
                     icon={<EditOutlined />} 
@@ -345,10 +349,10 @@ const TaskList = () => {
                     }}
                   />,
                   <Popconfirm
-                    title="Are you sure you want to delete this task?"
+                    title="Êtes-vous sûr de vouloir supprimer cette tâche ?"
                     onConfirm={() => handleDelete(task.id)}
-                    okText="Yes"
-                    cancelText="No"
+                    okText="Oui"
+                    cancelText="Non"
                   >
                     <Button 
                       danger 
@@ -387,7 +391,7 @@ const TaskList = () => {
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
                           <div>
                             <ClockCircleOutlined style={{ marginRight: '8px' }} />
-                            {task.deadline ? moment(task.deadline).format('MMM Do, YYYY') : 'No deadline'}
+                            {task.deadline ? moment(task.deadline).format('DD/MM/YYYY') : 'Pas de date limite'}
                           </div>
                           <div>
                             <Tag>{getCategoryEmoji(task.category)} {task.category.replace('_', ' ')}</Tag>
@@ -461,7 +465,7 @@ const TaskList = () => {
             size="large"
             style={{ height: '44px', padding: '0 24px' }}
           >
-            New Task
+            Nouvelle Tâche
           </Button>
           <Button
             onClick={toggleSortMode}
@@ -470,7 +474,7 @@ const TaskList = () => {
             size="large"
             style={{ height: '44px' }}
           >
-            {useSortedTasks ? "Using AI Priority" : "Use AI Priority"}
+            {useSortedTasks ? "Priorité IA activée" : "Utiliser priorité IA"}
           </Button>
         </div>
         
@@ -479,7 +483,7 @@ const TaskList = () => {
             {
               value: 'list',
               icon: <UnorderedListOutlined />,
-              label: 'List',
+              label: 'Liste',
             },
             {
               value: 'kanban',
